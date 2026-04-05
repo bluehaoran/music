@@ -143,6 +143,29 @@ export async function removeBar(
 }
 
 /**
+ * Update bar lyrics across the whole song in a single write.
+ * `lyrics` maps barId → lyric string (undefined/empty = clear the lyric).
+ */
+export async function updateBarLyrics(
+	songId: string,
+	lyrics: Record<string, string>,
+): Promise<void> {
+	await mutateSong(songId, (song) => ({
+		sections: song.sections.map((sec) => ({
+			...sec,
+			parts: sec.parts.map((p) => ({
+				...p,
+				bars: p.bars.map((b) => {
+					if (!(b.id in lyrics)) return b;
+					const lyric = lyrics[b.id] || undefined;
+					return lyric === b.lyric ? b : { ...b, lyric };
+				}),
+			})),
+		})),
+	}));
+}
+
+/**
  * Save pending chords to the arrangement (1 chord = 1 bar).
  * Appends to the last section's last part; creates a "Verse" section if needed.
  */

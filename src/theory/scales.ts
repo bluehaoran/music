@@ -24,11 +24,11 @@ export const SCALE_INTERVALS: Record<ScaleMode, number[]> = {
  * The naturally occurring chord quality for each scale degree.
  * Degree index is 0-based (degree 1 = index 0).
  *
- * major: I   ii  iii IV  V   vi  vii°
- * minor: i   ii° III iv  v   VI  VII
+ * major: I   ii  iii IV  V7   vi  vii°
+ * minor: i   ii° III iv  v    VI  VII
  */
 export const NATURAL_QUALITIES: Record<ScaleMode, ChordQuality[]> = {
-	major: ["maj", "min", "min", "maj", "maj", "min", "dim"],
+	major: ["maj", "min", "min", "maj", "dom7", "min", "dim"],
 	minor: ["min", "dim", "maj", "min", "min", "maj", "maj"],
 };
 

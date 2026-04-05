@@ -77,11 +77,13 @@ A web app (PWA, Pixel 9 primary target) for quickly sketching out music — chor
 - Override at Song / Section / Part / Bar level
 - *Not yet started*
 
-### 8. Lyrics Alignment
+### 8. Lyrics Alignment ✅ COMPLETE
 
-- One lyric string per bar stored on the Bar
-- Pipe `|` delimiter aligns text to bars
-- *Not yet started*
+- One lyric string per bar stored on the Bar (`Bar.lyric?: string`)
+- `LyricsSheet` bottom-sheet editor: one textarea per section, pipe `|` delimiters align text to bars
+- Lyrics previewed inline on bar cells in `ScoreView` (truncated, italic)
+- ♪ button in editor meta bar opens the sheet
+- Single-write batch save via `updateBarLyrics`
 
 ### 9. Import / Export
 
@@ -89,7 +91,16 @@ A web app (PWA, Pixel 9 primary target) for quickly sketching out music — chor
 - **Import:** ChordPro with heuristics for bar/section inference
 - *Not yet started*
 
-### 10. Recording / Loopback (DEFERRED — v2)
+### 10. UI Improvements
+
+- Introduce concept of "current" section.
+- As default behaviour, create and edit "in-place", in the current section
+- When chords are selected, automatically add them to the "current" section,
+- When a section or its children is clicked on, set that section to "current".
+
+- The Play button should play contextually. Default, play the entire song. If a section is selected, play that section. If a note or note alterative is selected, play should play just that chord so user can hear what it sounds like.
+
+### 11. Recording / Loopback (DEFERRED — v2)
 
 - Record audio through the app
 - Replay recording in time with a loop
@@ -99,10 +110,10 @@ A web app (PWA, Pixel 9 primary target) for quickly sketching out music — chor
 ## Refinement Order
 
 1. ✅ Data model & music theory engine
-2. React app scaffolding (Vite, PWA, Dexie, routing)
-3. Chord input UI
-4. Score display & editing
-5. Audio playback (Tone.js, SoundFont samples)
+2. ✅React app scaffolding (Vite, PWA, Dexie, routing)
+3. ✅Chord input UI
+4. ✅Score display & editing
+5. ✅Audio playback (Tone.js, SoundFont samples)
 6. Instrument/voicing management & drum patterns
-7. Lyrics alignment
+7. ✅ Lyrics alignment
 8. Import/Export

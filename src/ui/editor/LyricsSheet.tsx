@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import type { Song } from "../../theory/model";
-import { replaceBar } from "../../data/songRepo";
+import { updateBarLyrics } from "../../data/songRepo";
 
 interface Props {
 	song: Song;
@@ -47,25 +47,19 @@ export function LyricsSheet({ song, onClose }: Props) {
 	});
 
 	async function handleSave() {
+		const updates: Record<string, string> = {};
 		for (const section of song.sections) {
 			const raw = texts[section.id] ?? "";
 			const segments = raw.split("|").map((s) => s.trim());
-
 			let barIdx = 0;
 			for (const part of section.parts) {
 				for (const bar of part.bars) {
-					const lyric = barIdx < segments.length ? segments[barIdx] : "";
-					const prev = bar.lyric ?? "";
-					if (prev !== lyric) {
-						await replaceBar(song.id, section.id, part.id, {
-							...bar,
-							lyric: lyric || undefined,
-						});
-					}
+					updates[bar.id] = barIdx < segments.length ? segments[barIdx] : "";
 					barIdx++;
 				}
 			}
 		}
+		await updateBarLyrics(song.id, updates);
 		onClose();
 	}
 
