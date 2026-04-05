@@ -12,7 +12,7 @@
  * Tapping a button appends a chord to the current bar or creates a new bar.
  */
 
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { chordLabel } from "../../theory/chords";
 import type { Chord } from "../../theory/chords";
 import type { Song } from "../../theory/model";
@@ -246,6 +246,12 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		Chord | undefined
 	>(undefined);
 	const [showKeyPicker, setShowKeyPicker] = useState(false);
+	const [minimized, setMinimized] = useState(true);
+
+	// Auto-expand when a section or bar is selected
+	useEffect(() => {
+		if (currentContext !== null) setMinimized(false);
+	}, [currentContext]);
 
 	const playerStore = usePlayerStore();
 	const grid = buildDiatonicGrid(song.key, song.mode);
@@ -416,38 +422,7 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 	// ─────────────────────────────────────────────────────────────────────
 
 	return (
-		<div className="chord-panel">
-			{/* Key row */}
-			<div className="chord-key-row">
-				<button
-					className="chord-key-btn"
-					onClick={() => setShowKeyPicker((v) => !v)}
-					aria-expanded={showKeyPicker}
-				>
-					<span className="chord-key-root">{song.key}</span>
-					<span className="chord-key-mode">{song.mode}</span>
-					<span className="chord-key-caret" aria-hidden>
-						▾
-					</span>
-				</button>
-			</div>
-
-			{/* Nashville chord grid — 4 top, 3 bottom */}
-			<div className="chord-grid">
-				{grid.map((btn) => (
-					<button
-						key={btn.numeral}
-						className="chord-btn"
-						onPointerDown={() => onDown(btn)}
-						onPointerUp={() => onUp(btn)}
-						onPointerCancel={onCancel}
-						onContextMenu={(e) => e.preventDefault()}
-					>
-						<span className="chord-btn-numeral">{btn.numeralLabel}</span>
-						<span className="chord-btn-name">{btn.chordName}</span>
-					</button>
-				))}
-			</div>
+		<div className={`chord-panel${minimized ? " chord-panel--minimized" : ""}`}>
 
 			{/* Context strip */}
 			<div className="chord-context-strip">
@@ -487,7 +462,54 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 						tap a section or bar to focus
 					</span>
 				)}
+				
+				<button
+					className="chord-minimize-btn"
+					onClick={() => setMinimized((v) => !v)}
+					aria-label={minimized ? "Expand chord panel" : "Minimize chord panel"}
+				>
+					{minimized ? "+" : "-"}
+				</button>
 			</div>
+
+			{!minimized && (
+			<>
+			
+			{/* Key row */}
+			<div className="chord-key-row">
+				<button
+					className="chord-key-btn"
+					onClick={() => setShowKeyPicker((v) => !v)}
+					aria-expanded={showKeyPicker}
+				>
+					<span className="chord-key-root">{song.key}</span>
+					<span className="chord-key-mode">{song.mode}</span>
+					<span className="chord-key-caret" aria-hidden>
+						▾
+					</span>
+				</button>
+			</div>
+
+
+			{/* Nashville chord grid — 4 top, 3 bottom */}
+			<div className="chord-grid">
+				{grid.map((btn) => (
+					<button
+						key={btn.numeral}
+						className="chord-btn"
+						onPointerDown={() => onDown(btn)}
+						onPointerUp={() => onUp(btn)}
+						onPointerCancel={onCancel}
+						onContextMenu={(e) => e.preventDefault()}
+					>
+						<span className="chord-btn-numeral">{btn.numeralLabel}</span>
+						<span className="chord-btn-name">{btn.chordName}</span>
+					</button>
+				))}
+			</div>
+
+			</>
+			)}
 
 			{/* Overlays */}
 			{showKeyPicker && (

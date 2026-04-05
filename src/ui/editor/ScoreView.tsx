@@ -112,7 +112,7 @@ function RepeatControl({
 			onContextMenu={(e) => e.preventDefault()}
 			aria-label={`Repeat: ${count}`}
 		>
-			{count === 1 ? "×" : `×${count}`}
+			{count === 1 ? "🔂" : `×${count}`}
 		</button>
 	);
 }

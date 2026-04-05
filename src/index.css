@@ -277,6 +277,27 @@ body {
 
 .chord-key-row {
 	margin-bottom: 16px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.chord-panel--minimized .chord-key-row {
+	margin-bottom: 0;
+}
+
+.chord-minimize-btn {
+	cursor: pointer;
+	font-size: 16px;
+	padding: 4px 8px;
+	line-height: 1;
+	touch-action: manipulation;
+	opacity: 0.6;
+	border-radius: 20px;
+}
+
+.chord-minimize-btn:active {
+	opacity: 1;
 }
 
 .chord-key-btn {
@@ -687,7 +708,7 @@ body {
 
 .score-section-footer {
 	display: flex;
-	align-items: right;
+	justify-content: right;
 	gap: 6px;
 }
 
@@ -742,12 +763,12 @@ body {
 }
 
 .score-bars-scroll {
-	overflow-x: auto;
-	-webkit-overflow-scrolling: touch;
+	width: 100%;
 }
 
 .score-bars {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 0px;
 	padding: 2px 0 6px;
 	align-items: center;
@@ -1887,8 +1908,8 @@ body {
 	gap: 6px;
 	min-height: 40px;
 	padding: 6px 0 2px;
-	border-top: 1px solid var(--border);
-	margin-top: 4px;
+	border-bottom: 1px solid var(--border);
+	margin-bottom: 16px;
 }
 
 .chord-context-chips {
