@@ -7,6 +7,7 @@ import { ScoreView } from "./ScoreView";
 import { BarEditSheet } from "./BarEditSheet";
 import { SongSettingsSheet } from "./SongSettingsSheet";
 import { LyricsSheet } from "./LyricsSheet";
+import { ExportSheet } from "./ExportSheet";
 
 interface Props {
 	songId: string;
@@ -23,6 +24,7 @@ export function EditorScreen({ songId }: Props) {
 	const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
 	const [showSettings, setShowSettings] = useState(false);
 	const [showLyrics, setShowLyrics] = useState(false);
+	const [showExport, setShowExport] = useState(false);
 
 	if (song === undefined) {
 		return <div className="editor-loading">Loading…</div>;
@@ -87,7 +89,12 @@ export function EditorScreen({ songId }: Props) {
 				<SongSettingsSheet
 					song={song}
 					onClose={() => setShowSettings(false)}
+					onExport={() => { setShowSettings(false); setShowExport(true); }}
 				/>
+			)}
+
+			{showExport && (
+				<ExportSheet song={song} onClose={() => setShowExport(false)} />
 			)}
 
 			{showLyrics && (

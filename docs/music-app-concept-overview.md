@@ -85,11 +85,14 @@ A web app (PWA, Pixel 9 primary target) for quickly sketching out music — chor
 - ♪ button in editor meta bar opens the sheet
 - Single-write batch save via `updateBarLyrics`
 
-### 9. Import / Export
+### 9. Import / Export ✅ COMPLETE
 
-- **Export:** ChordPro format
-- **Import:** ChordPro with heuristics for bar/section inference
-- *Not yet started*
+- **Export:** `exportChordPro(song)` in `src/data/chordpro.ts` — renders metadata directives + `[Chord]lyric` bar tokens + section start/end tags
+  - Accessed via "Export ChordPro" button in Song Settings sheet
+  - `ExportSheet` bottom sheet: Copy, Download (.cho), Share (Web Share API)
+- **Import:** `importChordPro(text)` — parses `{title}`, `{key}`, `{tempo}`, `{time}`, `{capo}`, `{start_of_*}`, `{end_of_*}`, `{comment: xN}` repeat counts, and `[Chord]lyric` lines into a full song
+  - Accessed via "Import" pill button in the Library screen
+  - `ImportSheet` bottom sheet: paste text or open a `.cho` file
 
 ### 10. UI Improvements
 
@@ -116,4 +119,4 @@ A web app (PWA, Pixel 9 primary target) for quickly sketching out music — chor
 5. ✅Audio playback (Tone.js, SoundFont samples)
 6. Instrument/voicing management & drum patterns
 7. ✅ Lyrics alignment
-8. Import/Export
+8. ✅ Import/Export

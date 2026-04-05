@@ -1457,3 +1457,294 @@ body {
 .lyrics-save-btn:active:not(:disabled) {
 	opacity: 0.85;
 }
+
+/* ─── Settings: export button ────────────────────────────────────────────── */
+
+.settings-export-btn {
+	width: 100%;
+	padding: 13px;
+	background: none;
+	border: 1.5px solid var(--border);
+	border-radius: 12px;
+	font: inherit;
+	font-size: 15px;
+	font-weight: 500;
+	color: var(--accent);
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+.settings-export-btn:active {
+	background: var(--accent-bg);
+}
+
+/* ─── Export sheet ───────────────────────────────────────────────────────── */
+
+.export-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 100;
+	display: flex;
+	align-items: flex-end;
+}
+
+.export-sheet {
+	width: 100%;
+	background: var(--bg);
+	border-radius: 20px 20px 0 0;
+	padding: 20px 20px 36px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	max-height: 88dvh;
+	overflow-y: auto;
+}
+
+.export-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-shrink: 0;
+}
+
+.export-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-h);
+}
+
+.export-close {
+	background: none;
+	border: none;
+	font-size: 22px;
+	color: var(--text);
+	opacity: 0.45;
+	cursor: pointer;
+	padding: 4px 6px;
+	line-height: 1;
+	touch-action: manipulation;
+}
+
+.export-filename {
+	font-size: 13px;
+	color: var(--text);
+	opacity: 0.6;
+	margin: -4px 0 0;
+	font-family: var(--mono);
+}
+
+.export-textarea {
+	width: 100%;
+	padding: 10px 14px;
+	background: var(--bg);
+	border: 1.5px solid var(--border);
+	border-radius: 10px;
+	font-family: var(--mono);
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--text);
+	resize: vertical;
+	outline: none;
+	min-height: 120px;
+}
+
+.export-actions {
+	display: flex;
+	gap: 10px;
+	flex-shrink: 0;
+}
+
+.export-btn {
+	flex: 1;
+	padding: 13px;
+	border-radius: 12px;
+	font: inherit;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+.export-btn--primary {
+	background: var(--accent);
+	border: none;
+	color: #fff;
+}
+
+.export-btn--secondary {
+	background: none;
+	border: 1.5px solid var(--border);
+	color: var(--text-h);
+}
+
+.export-btn--secondary:active {
+	background: var(--accent-bg);
+}
+
+.export-btn--primary:active {
+	opacity: 0.85;
+}
+
+/* ─── Library: import trigger button ────────────────────────────────────── */
+
+.library-import-btn {
+	position: fixed;
+	bottom: 28px;
+	right: 92px;
+	padding: 10px 16px;
+	background: var(--bg);
+	border: 1.5px solid var(--border);
+	border-radius: 24px;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text);
+	cursor: pointer;
+	touch-action: manipulation;
+	box-shadow: var(--shadow);
+}
+
+.library-import-btn:active {
+	background: var(--accent-bg);
+	color: var(--accent);
+}
+
+/* ─── Import sheet ───────────────────────────────────────────────────────── */
+
+.import-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 100;
+	display: flex;
+	align-items: flex-end;
+}
+
+.import-sheet {
+	width: 100%;
+	background: var(--bg);
+	border-radius: 20px 20px 0 0;
+	padding: 20px 20px 36px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	max-height: 88dvh;
+	overflow-y: auto;
+}
+
+.import-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-shrink: 0;
+}
+
+.import-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-h);
+}
+
+.import-close {
+	background: none;
+	border: none;
+	font-size: 22px;
+	color: var(--text);
+	opacity: 0.45;
+	cursor: pointer;
+	padding: 4px 6px;
+	line-height: 1;
+	touch-action: manipulation;
+}
+
+.import-hint {
+	font-size: 13px;
+	color: var(--text);
+	opacity: 0.6;
+	margin: -4px 0 0;
+}
+
+.import-code {
+	font-family: var(--mono);
+	font-size: 12px;
+	background: var(--code-bg);
+	padding: 1px 4px;
+	border-radius: 3px;
+}
+
+.import-textarea {
+	width: 100%;
+	padding: 10px 14px;
+	background: var(--bg);
+	border: 1.5px solid var(--border);
+	border-radius: 10px;
+	font-family: var(--mono);
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--text-h);
+	resize: vertical;
+	outline: none;
+	min-height: 120px;
+}
+
+.import-textarea::placeholder {
+	color: var(--text);
+	opacity: 0.3;
+}
+
+.import-textarea:focus {
+	border-color: var(--accent-border);
+	background: var(--accent-bg);
+}
+
+.import-error {
+	font-size: 13px;
+	color: #e55;
+	margin: -4px 0 0;
+}
+
+.import-actions {
+	display: flex;
+	gap: 10px;
+	flex-shrink: 0;
+}
+
+.import-btn {
+	flex: 1;
+	padding: 13px;
+	border-radius: 12px;
+	font: inherit;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+.import-btn--primary {
+	background: var(--accent);
+	border: none;
+	color: #fff;
+}
+
+.import-btn--secondary {
+	background: none;
+	border: 1.5px solid var(--border);
+	color: var(--text-h);
+}
+
+.import-btn--primary:disabled {
+	opacity: 0.4;
+}
+
+.import-btn--secondary:disabled {
+	opacity: 0.4;
+}
+
+.import-btn--secondary:active:not(:disabled) {
+	background: var(--accent-bg);
+}
+
+.import-btn--primary:active:not(:disabled) {
+	opacity: 0.85;
+}

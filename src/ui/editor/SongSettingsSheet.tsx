@@ -12,6 +12,7 @@ import { patternsForTimeSig } from "../../audio/drums";
 interface Props {
 	song: Song;
 	onClose: () => void;
+	onExport: () => void;
 }
 
 const TIME_SIGS: TimeSignature[] = [
@@ -29,7 +30,7 @@ function tsEqual(a: TimeSignature, b: TimeSignature) {
 	return a.numerator === b.numerator && a.denominator === b.denominator;
 }
 
-export function SongSettingsSheet({ song, onClose }: Props) {
+export function SongSettingsSheet({ song, onClose, onExport }: Props) {
 	const [instrument, setInstrument] = useState(song.instrument);
 	const [capo, setCapo] = useState(song.capo);
 	const [bpm, setBpm] = useState(song.bpm);
@@ -173,6 +174,10 @@ export function SongSettingsSheet({ song, onClose }: Props) {
 						))}
 					</div>
 				</div>
+
+				<button className="settings-export-btn" onClick={onExport}>
+					Export ChordPro
+				</button>
 
 				<button className="settings-done-btn" onClick={handleDone}>
 					Done
