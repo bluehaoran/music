@@ -1,40 +1,28 @@
 import { useState, useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../../data/db";
-import type { Bar } from "../../theory/model";
 import { ChordPanel } from "./ChordPanel";
 import { ScoreView } from "./ScoreView";
-import { BarEditSheet } from "./BarEditSheet";
 import { SongSettingsSheet } from "./SongSettingsSheet";
 import { LyricsSheet } from "./LyricsSheet";
 import { ExportSheet } from "./ExportSheet";
 import { usePlayerStore } from "../../audio/playerStore";
+import type { CurrentContext } from "./types";
 
 interface Props {
 	songId: string;
 }
 
-interface EditTarget {
-	sectionId: string;
-	partId: string;
-	bar: Bar;
-}
-
 export function EditorScreen({ songId }: Props) {
 	const song = useLiveQuery(() => db.songs.get(songId), [songId]);
-	const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+	const [currentContext, setCurrentContext] = useState<CurrentContext>(null);
 	const [showSettings, setShowSettings] = useState(false);
 	const [showLyrics, setShowLyrics] = useState(false);
 	const [showExport, setShowExport] = useState(false);
-	const [currentSectionId, setCurrentSectionId] = useState<string | null>(null);
 
 	const playerStore = usePlayerStore();
 	const isPlaying = playerStore.state === "playing";
 	const isLoading = playerStore.isLoading;
-
-	const handleSetCurrentSection = useCallback((sectionId: string) => {
-		setCurrentSectionId((prev) => (prev === sectionId ? prev : sectionId));
-	}, []);
 
 	const handlePlayStop = useCallback(async () => {
 		if (!song) return;
@@ -42,27 +30,43 @@ export function EditorScreen({ songId }: Props) {
 			playerStore.stop();
 			return;
 		}
-		if (currentSectionId) {
-			const section = song.sections.find((s) => s.id === currentSectionId);
-			if (section) {
-				await playerStore.play({ ...song, sections: [section] });
+		if (currentContext?.type === "bar") {
+			const sec = song.sections.find((s) => s.id === currentContext.sectionId);
+			const part = sec?.parts.find((p) => p.id === currentContext.partId);
+			const bar = part?.bars.find((b) => b.id === currentContext.barId);
+			if (sec && part && bar) {
+				await playerStore.play({
+					...song,
+					sections: [
+						{ ...sec, parts: [{ ...part, bars: [bar], repeatCount: 1 }] },
+					],
+				});
+				return;
+			}
+		} else if (currentContext?.type === "section") {
+			const sec = song.sections.find((s) => s.id === currentContext.sectionId);
+			if (sec) {
+				await playerStore.play({ ...song, sections: [sec] });
 				return;
 			}
 		}
 		await playerStore.play(song);
-	}, [song, isPlaying, currentSectionId, playerStore]);
+	}, [song, isPlaying, currentContext, playerStore]);
 
-	if (song === undefined) {
-		return <div className="editor-loading">Loading…</div>;
-	}
-
-	if (song === null) {
+	if (song === undefined) return <div className="editor-loading">Loading…</div>;
+	if (song === null)
 		return <div className="editor-loading">Song not found.</div>;
-	}
 
-	const currentSectionName = currentSectionId
-		? (song.sections.find((s) => s.id === currentSectionId)?.name ?? null)
-		: null;
+	let playLabel = "▶ Play";
+	if (isLoading) playLabel = "Loading…";
+	else if (isPlaying) playLabel = "■ Stop";
+	else if (currentContext?.type === "bar") playLabel = "▶ Play bar";
+	else if (currentContext?.type === "section") {
+		const name = song.sections.find(
+			(s) => s.id === currentContext.sectionId,
+		)?.name;
+		if (name) playLabel = `▶ Play ${name}`;
+	}
 
 	return (
 		<div className="editor-root">
@@ -78,40 +82,6 @@ export function EditorScreen({ songId }: Props) {
 				{song.drumPatternId && (
 					<span className="editor-meta-chip editor-meta-chip--drum">drums</span>
 				)}
-
-				{/* Contextual play button */}
-				<button
-					className={[
-						"editor-play-btn",
-						isPlaying ? "editor-play-btn--playing" : "",
-					]
-						.filter(Boolean)
-						.join(" ")}
-					onClick={handlePlayStop}
-					disabled={isLoading}
-					aria-label={
-						isPlaying
-							? "Stop"
-							: currentSectionName
-								? `Play ${currentSectionName}`
-								: "Play song"
-					}
-					title={
-						isPlaying
-							? "Stop"
-							: currentSectionName
-								? `Play ${currentSectionName}`
-								: "Play song"
-					}
-				>
-					{isLoading ? "…" : isPlaying ? "■" : "▶"}
-					{!isPlaying && currentSectionName && (
-						<span className="editor-play-btn-context">
-							{currentSectionName}
-						</span>
-					)}
-				</button>
-
 				<button
 					className="editor-lyrics-btn"
 					onClick={() => setShowLyrics(true)}
@@ -131,25 +101,31 @@ export function EditorScreen({ songId }: Props) {
 			<div className="editor-score">
 				<ScoreView
 					song={song}
-					onEditBar={(sectionId, partId, bar) =>
-						setEditTarget({ sectionId, partId, bar })
-					}
-					currentSectionId={currentSectionId}
-					onSetCurrentSection={handleSetCurrentSection}
+					currentContext={currentContext}
+					onContextChange={setCurrentContext}
 				/>
 			</div>
 
-			<ChordPanel song={song} currentSectionId={currentSectionId} />
+			<ChordPanel
+				song={song}
+				currentContext={currentContext}
+				onContextChange={setCurrentContext}
+			/>
 
-			{editTarget && (
-				<BarEditSheet
-					bar={editTarget.bar}
-					song={song}
-					sectionId={editTarget.sectionId}
-					partId={editTarget.partId}
-					onClose={() => setEditTarget(null)}
-				/>
-			)}
+			<div className="editor-play-bar">
+				<button
+					className={[
+						"editor-play-bar-btn",
+						isPlaying ? "editor-play-bar-btn--playing" : "",
+					]
+						.filter(Boolean)
+						.join(" ")}
+					onClick={handlePlayStop}
+					disabled={isLoading}
+				>
+					{playLabel}
+				</button>
+			</div>
 
 			{showSettings && (
 				<SongSettingsSheet
@@ -161,11 +137,9 @@ export function EditorScreen({ songId }: Props) {
 					}}
 				/>
 			)}
-
 			{showExport && (
 				<ExportSheet song={song} onClose={() => setShowExport(false)} />
 			)}
-
 			{showLyrics && (
 				<LyricsSheet song={song} onClose={() => setShowLyrics(false)} />
 			)}

@@ -2,10 +2,10 @@
  * ScoreView.tsx
  * Arrangement display — shows the song's section/part/bar hierarchy.
  *
- * Each section has an editable name header and a delete button.
- * Each part shows bars as tappable cells in a horizontal scroll row.
+ * Clicking a section name selects it (and opens rename).
+ * Clicking a bar selects it as the current editing context.
+ * Each section header shows a repeat-count control (×, ×2, ×3, ×4).
  * The currently playing bar is highlighted via playerStore.
- * Tapping a bar calls onEditBar to open the BarEditSheet.
  */
 
 import { useMemo, useRef, useState } from "react";
@@ -16,15 +16,16 @@ import {
 	addSection as addSectionRepo,
 	removeSection as removeSectionRepo,
 	renameSection as renameSectionRepo,
+	updatePartRepeatCount,
 } from "../../data/songRepo";
+import type { CurrentContext } from "./types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Props {
 	song: Song;
-	onEditBar: (sectionId: string, partId: string, bar: Bar) => void;
-	currentSectionId: string | null;
-	onSetCurrentSection: (sectionId: string) => void;
+	currentContext: CurrentContext;
+	onContextChange: (ctx: CurrentContext) => void;
 }
 
 interface BarRef {
@@ -65,15 +66,68 @@ const SECTION_NAMES = [
 	"Interlude",
 ];
 
+// ─── RepeatControl ────────────────────────────────────────────────────────────
+
+function RepeatControl({
+	count,
+	onChange,
+}: {
+	count: number;
+	onChange: (n: number) => void;
+}) {
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const didLongRef = useRef(false);
+
+	function onDown() {
+		didLongRef.current = false;
+		timerRef.current = setTimeout(() => {
+			didLongRef.current = true;
+			if (count > 1 && window.confirm("Remove repeat?")) onChange(1);
+		}, 500);
+	}
+
+	function onUp() {
+		if (timerRef.current) clearTimeout(timerRef.current);
+		if (!didLongRef.current) {
+			onChange(count >= 4 ? 1 : count + 1);
+		}
+	}
+
+	function onCancel() {
+		if (timerRef.current) clearTimeout(timerRef.current);
+		didLongRef.current = false;
+	}
+
+	return (
+		<button
+			className={[
+				"score-repeat-btn",
+				count > 1 ? "score-repeat-btn--active" : "",
+			]
+				.filter(Boolean)
+				.join(" ")}
+			onPointerDown={onDown}
+			onPointerUp={onUp}
+			onPointerCancel={onCancel}
+			onContextMenu={(e) => e.preventDefault()}
+			aria-label={`Repeat: ${count}`}
+		>
+			{count === 1 ? "×" : `×${count}`}
+		</button>
+	);
+}
+
 // ─── BarCell ──────────────────────────────────────────────────────────────────
 
 function BarCell({
 	bar,
 	isPlaying,
+	isSelected,
 	onClick,
 }: {
 	bar: Bar;
 	isPlaying: boolean;
+	isSelected: boolean;
 	onClick: () => void;
 }) {
 	const label =
@@ -86,6 +140,7 @@ function BarCell({
 			className={[
 				"score-bar-cell",
 				isPlaying ? "score-bar-cell--playing" : "",
+				isSelected ? "score-bar-cell--selected" : "",
 				bar.slots.length === 0 ? "score-bar-cell--empty" : "",
 				bar.lyric ? "score-bar-cell--has-lyric" : "",
 			]
@@ -101,12 +156,7 @@ function BarCell({
 
 // ─── ScoreView ────────────────────────────────────────────────────────────────
 
-export function ScoreView({
-	song,
-	onEditBar,
-	currentSectionId,
-	onSetCurrentSection,
-}: Props) {
+export function ScoreView({ song, currentContext, onContextChange }: Props) {
 	const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 	const [nameDraft, setNameDraft] = useState("");
 	const nameInputRef = useRef<HTMLInputElement>(null);
@@ -127,6 +177,18 @@ export function ScoreView({
 		);
 	}
 
+	function isBarSelected(barId: string) {
+		return currentContext?.type === "bar" && currentContext.barId === barId;
+	}
+
+	function isSectionActive(sectionId: string) {
+		return (
+			(currentContext?.type === "section" &&
+				currentContext.sectionId === sectionId) ||
+			(currentContext?.type === "bar" && currentContext.sectionId === sectionId)
+		);
+	}
+
 	async function handleAddSection() {
 		const existing = new Set(song.sections.map((s) => s.name));
 		const name =
@@ -138,6 +200,13 @@ export function ScoreView({
 	async function handleDeleteSection(sectionId: string) {
 		if (!window.confirm("Delete this section and all its bars?")) return;
 		await removeSectionRepo(song.id, sectionId);
+		if (
+			currentContext?.type !== null &&
+			"sectionId" in (currentContext ?? {}) &&
+			(currentContext as { sectionId: string }).sectionId === sectionId
+		) {
+			onContextChange(null);
+		}
 	}
 
 	async function commitRename(sectionId: string) {
@@ -149,17 +218,13 @@ export function ScoreView({
 	function startRename(sectionId: string, currentName: string) {
 		setEditingSectionId(sectionId);
 		setNameDraft(currentName);
-		// focus after render
 		requestAnimationFrame(() => nameInputRef.current?.focus());
 	}
 
 	if (song.sections.length === 0) {
 		return (
 			<div className="score-empty">
-				<p>
-					Tap chords above and hit <strong>Save ↑</strong> to build your
-					arrangement.
-				</p>
+				<p>Tap chords below to build your arrangement.</p>
 				<button className="score-add-section-btn" onClick={handleAddSection}>
 					+ Add section
 				</button>
@@ -170,13 +235,13 @@ export function ScoreView({
 	return (
 		<div className="score-view">
 			{song.sections.map((section) => {
-				const isCurrent = section.id === currentSectionId;
+				const firstPart = section.parts[0];
 				return (
 					<div
 						key={section.id}
 						className={[
 							"score-section",
-							isCurrent ? "score-section--current" : "",
+							isSectionActive(section.id) ? "score-section--current" : "",
 						]
 							.filter(Boolean)
 							.join(" ")}
@@ -199,13 +264,14 @@ export function ScoreView({
 								<span
 									className="score-section-name"
 									onClick={() => {
-										onSetCurrentSection(section.id);
+										onContextChange({ type: "section", sectionId: section.id });
 										startRename(section.id, section.name);
 									}}
 								>
 									{section.name}
 								</span>
 							)}
+
 							<button
 								className="score-section-delete"
 								onClick={() => handleDeleteSection(section.id)}
@@ -222,7 +288,7 @@ export function ScoreView({
 									<div className="score-bars">
 										{part.bars.length === 0 ? (
 											<span className="score-empty-part">
-												empty — save chords above
+												empty — tap chords below
 											</span>
 										) : (
 											part.bars.map((bar) => (
@@ -230,10 +296,15 @@ export function ScoreView({
 													key={bar.id}
 													bar={bar}
 													isPlaying={isBarPlaying(section.id, part.id, bar.id)}
-													onClick={() => {
-														onSetCurrentSection(section.id);
-														onEditBar(section.id, part.id, bar);
-													}}
+													isSelected={isBarSelected(bar.id)}
+													onClick={() =>
+														onContextChange({
+															type: "bar",
+															sectionId: section.id,
+															partId: part.id,
+															barId: bar.id,
+														})
+													}
 												/>
 											))
 										)}
@@ -241,6 +312,20 @@ export function ScoreView({
 								</div>
 							</div>
 						))}
+
+						<div className="score-section-footer">
+
+							{/* Repeat count control (on first part) */}
+							{firstPart && (
+								<RepeatControl
+									count={firstPart.repeatCount}
+									onChange={(n) =>
+										updatePartRepeatCount(song.id, section.id, firstPart.id, n)
+									}
+								/>
+							)}
+
+						</div>
 					</div>
 				);
 			})}

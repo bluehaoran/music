@@ -171,6 +171,100 @@ export async function updateBarLyrics(
 	}));
 }
 
+/** Add a chord as a new slot in an existing bar, rebuilding even-split timing. */
+export async function addSlotToBar(
+	songId: string,
+	sectionId: string,
+	partId: string,
+	barId: string,
+	chord: Chord,
+): Promise<void> {
+	await mutateSong(songId, (song) => ({
+		sections: song.sections.map((sec) =>
+			sec.id !== sectionId
+				? sec
+				: {
+						...sec,
+						parts: sec.parts.map((p) =>
+							p.id !== partId
+								? p
+								: {
+										...p,
+										bars: p.bars.map((b) => {
+											if (b.id !== barId) return b;
+											const chords = [...b.slots.map((sl) => sl.chord), chord];
+											return {
+												...createBar(chords, song.timeSignature),
+												id: b.id,
+												lyric: b.lyric,
+											};
+										}),
+									},
+						),
+					},
+		),
+	}));
+}
+
+/** Replace one slot's chord in a bar by slot index. */
+export async function replaceSlotInBar(
+	songId: string,
+	sectionId: string,
+	partId: string,
+	barId: string,
+	slotIndex: number,
+	chord: Chord,
+): Promise<void> {
+	await mutateSong(songId, (song) => ({
+		sections: song.sections.map((sec) =>
+			sec.id !== sectionId
+				? sec
+				: {
+						...sec,
+						parts: sec.parts.map((p) =>
+							p.id !== partId
+								? p
+								: {
+										...p,
+										bars: p.bars.map((b) => {
+											if (b.id !== barId) return b;
+											const chords = b.slots.map((sl, i) =>
+												i === slotIndex ? chord : sl.chord,
+											);
+											return {
+												...createBar(chords, song.timeSignature),
+												id: b.id,
+												lyric: b.lyric,
+											};
+										}),
+									},
+						),
+					},
+		),
+	}));
+}
+
+/** Set the repeat count on a specific part. */
+export async function updatePartRepeatCount(
+	songId: string,
+	sectionId: string,
+	partId: string,
+	repeatCount: number,
+): Promise<void> {
+	await mutateSong(songId, (s) => ({
+		sections: s.sections.map((sec) =>
+			sec.id !== sectionId
+				? sec
+				: {
+						...sec,
+						parts: sec.parts.map((p) =>
+							p.id !== partId ? p : { ...p, repeatCount },
+						),
+					},
+		),
+	}));
+}
+
 /**
  * Save pending chords to the arrangement (1 chord = 1 bar).
  * Appends to the last section's last part; creates a "Verse" section if needed.

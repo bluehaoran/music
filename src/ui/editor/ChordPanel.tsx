@@ -5,18 +5,17 @@
  * Layout (mobile-first):
  *   [Key / Mode picker row]
  *   [7 diatonic chord buttons — 4 top row, 3 bottom row]
- *   [Pending chord strip — tap a chord to remove]
- *   [Clear | Loop / Stop]
+ *   [Context strip — shows current bar's chords or section name]
  *
- * Long-press a chord button → quality-variant popover.
- * Tapping a button (or variant) appends the chord to the pending queue.
- * "Loop" builds a transient Song from pending chords and plays via audioEngine.
+ * Long-press a chord button → quality-variant popover (adds that variant).
+ * Long-press a chip in the context strip → quality-variant popover (replaces that slot).
+ * Tapping a button appends a chord to the current bar or creates a new bar.
  */
 
-import { useState, useRef, useCallback } from "react";
-import { chordLabel, QUALITY_SUFFIX } from "../../theory/chords";
-import type { Chord, ChordQuality } from "../../theory/chords";
-import type { Song, Bar, Part, Section } from "../../theory/model";
+import { useState, useRef, useCallback, useMemo } from "react";
+import { chordLabel } from "../../theory/chords";
+import type { Chord } from "../../theory/chords";
+import type { Song } from "../../theory/model";
 import { getVoicing } from "../../theory/voicings";
 import { GuitarDiagram } from "./GuitarDiagram";
 import { ticksPerBar } from "../../theory/model";
@@ -25,10 +24,14 @@ import type { NashvilleNumeral } from "../../theory/scales";
 import type { NoteName, ScaleMode } from "../../theory/notes";
 import {
 	updateSong,
-	saveChordsToArrangement,
-	saveChordsToSection,
+	addBars,
+	addSlotToBar,
+	replaceSlotInBar,
+	removeBar,
 } from "../../data/songRepo";
+import { createBar, createPart, createSection } from "../../theory/songFactory";
 import { usePlayerStore } from "../../audio/playerStore";
+import type { CurrentContext } from "./types";
 
 // ─── Key picker data ────────────────────────────────────────────────────────
 
@@ -55,31 +58,28 @@ type GridButton = ReturnType<typeof buildDiatonicGrid>[number];
 
 const LONG_PRESS_MS = 450;
 
-function useLongPress(
-	onTap: (btn: GridButton) => void,
-	onLong: (btn: GridButton) => void,
-) {
+function useLongPress<T>(onTap: (item: T) => void, onLong: (item: T) => void) {
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const didLong = useRef(false);
 
 	const onDown = useCallback(
-		(btn: GridButton) => {
+		(item: T) => {
 			didLong.current = false;
 			timer.current = setTimeout(() => {
 				didLong.current = true;
-				onLong(btn);
+				onLong(item);
 			}, LONG_PRESS_MS);
 		},
 		[onLong],
 	);
 
 	const onUp = useCallback(
-		(btn: GridButton) => {
+		(item: T) => {
 			if (timer.current) {
 				clearTimeout(timer.current);
 				timer.current = null;
 			}
-			if (!didLong.current) onTap(btn);
+			if (!didLong.current) onTap(item);
 		},
 		[onTap],
 	);
@@ -102,6 +102,7 @@ interface VariantPopoverProps {
 	songKey: NoteName;
 	mode: ScaleMode;
 	instrument: "guitar" | "piano";
+	initialChord?: Chord;
 	onSelect: (chord: Chord) => void;
 	onClose: () => void;
 	onPlayChord: (chord: Chord) => void;
@@ -112,12 +113,15 @@ function VariantPopover({
 	songKey,
 	mode,
 	instrument,
+	initialChord,
 	onSelect,
 	onClose,
 	onPlayChord,
 }: VariantPopoverProps) {
 	const variants = variantsForDegree(target.numeral, songKey, mode);
-	const [previewChord, setPreviewChord] = useState<Chord>(target.chord);
+	const [previewChord, setPreviewChord] = useState<Chord>(
+		initialChord ?? target.chord,
+	);
 
 	const voicing =
 		instrument === "guitar"
@@ -142,7 +146,6 @@ function VariantPopover({
 					</button>
 				</div>
 
-				{/* Guitar diagram preview */}
 				{voicing && (
 					<div className="variant-diagram-row">
 						<GuitarDiagram voicing={voicing} label={chordLabel(previewChord)} />
@@ -153,7 +156,17 @@ function VariantPopover({
 					{variants.map((v) => (
 						<button
 							key={v.quality}
-							className={`variant-btn${v.quality === target.chord.quality ? " variant-btn--natural" : ""}${v.quality === previewChord.quality ? " variant-btn--previewed" : ""}`}
+							className={[
+								"variant-btn",
+								v.quality === target.chord.quality
+									? "variant-btn--natural"
+									: "",
+								v.quality === previewChord.quality
+									? "variant-btn--previewed"
+									: "",
+							]
+								.filter(Boolean)
+								.join(" ")}
 							onPointerEnter={() => setPreviewChord(v.chord)}
 							onPointerDown={() => setPreviewChord(v.chord)}
 							onClick={() => onSelect(v.chord)}
@@ -172,19 +185,17 @@ function VariantPopover({
 
 // ─── Key picker ───────────────────────────────────────────────────────────────
 
-interface KeyPickerProps {
-	currentKey: NoteName;
-	currentMode: ScaleMode;
-	onChange: (key: NoteName, mode: ScaleMode) => void;
-	onClose: () => void;
-}
-
 function KeyPicker({
 	currentKey,
 	currentMode,
 	onChange,
 	onClose,
-}: KeyPickerProps) {
+}: {
+	currentKey: NoteName;
+	currentMode: ScaleMode;
+	onChange: (key: NoteName, mode: ScaleMode) => void;
+	onClose: () => void;
+}) {
 	return (
 		<div className="key-picker-overlay" onPointerDown={onClose}>
 			<div className="key-picker" onPointerDown={(e) => e.stopPropagation()}>
@@ -222,39 +233,160 @@ function KeyPicker({
 
 interface Props {
 	song: Song;
-	currentSectionId: string | null;
+	currentContext: CurrentContext;
+	onContextChange: (ctx: CurrentContext) => void;
 }
 
-export function ChordPanel({ song, currentSectionId }: Props) {
-	const [pendingChords, setPendingChords] = useState<Chord[]>([]);
+export function ChordPanel({ song, currentContext, onContextChange }: Props) {
+	// popoverTarget: from grid button long-press (editingSlotIndex = null)
+	// or from chip long-press (editingSlotIndex = slot index to replace)
 	const [popoverTarget, setPopoverTarget] = useState<GridButton | null>(null);
+	const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
+	const [popoverInitialChord, setPopoverInitialChord] = useState<
+		Chord | undefined
+	>(undefined);
 	const [showKeyPicker, setShowKeyPicker] = useState(false);
 
 	const playerStore = usePlayerStore();
-
 	const grid = buildDiatonicGrid(song.key, song.mode);
 
-	// ── Chord tapping ──────────────────────────────────────────────────────
+	// Resolve the current bar from song data (live)
+	const currentBar = useMemo(() => {
+		if (currentContext?.type !== "bar") return null;
+		const sec = song.sections.find((s) => s.id === currentContext.sectionId);
+		const part = sec?.parts.find((p) => p.id === currentContext.partId);
+		return part?.bars.find((b) => b.id === currentContext.barId) ?? null;
+	}, [song, currentContext]);
 
-	const addChord = useCallback((chord: Chord) => {
-		setPendingChords((prev) => [...prev, chord]);
-	}, []);
+	const currentSectionName = useMemo(() => {
+		if (currentContext?.type !== "section") return null;
+		return (
+			song.sections.find((s) => s.id === currentContext.sectionId)?.name ?? null
+		);
+	}, [song, currentContext]);
 
-	const openPopover = useCallback((btn: GridButton) => {
+	// ── Chord input ────────────────────────────────────────────────────────
+
+	const handleChordInput = useCallback(
+		async (chord: Chord) => {
+			if (currentContext?.type === "bar") {
+				await addSlotToBar(
+					song.id,
+					currentContext.sectionId,
+					currentContext.partId,
+					currentContext.barId,
+					chord,
+				);
+			} else if (currentContext?.type === "section") {
+				const sec = song.sections.find(
+					(s) => s.id === currentContext.sectionId,
+				);
+				if (!sec) return;
+				const bar = createBar([chord], song.timeSignature);
+				const lastPart = sec.parts[sec.parts.length - 1];
+				await addBars(song.id, sec.id, lastPart.id, [bar]);
+			} else {
+				// No context: create a default section with the chord
+				const bar = createBar([chord], song.timeSignature);
+				if (song.sections.length === 0) {
+					const part = createPart([bar]);
+					const section = createSection("Verse", [part]);
+					await updateSong(song.id, { sections: [section] });
+					onContextChange({ type: "section", sectionId: section.id });
+				} else {
+					const lastSec = song.sections[song.sections.length - 1];
+					const lastPart = lastSec.parts[lastSec.parts.length - 1];
+					await addBars(song.id, lastSec.id, lastPart.id, [bar]);
+					onContextChange({ type: "section", sectionId: lastSec.id });
+				}
+			}
+		},
+		[currentContext, song, onContextChange],
+	);
+
+	// ── Grid long-press ────────────────────────────────────────────────────
+
+	const openGridPopover = useCallback((btn: GridButton) => {
+		setEditingSlotIndex(null);
+		setPopoverInitialChord(undefined);
 		setPopoverTarget(btn);
 	}, []);
 
 	const { onDown, onUp, onCancel } = useLongPress(
-		(btn) => addChord(btn.chord),
-		openPopover,
+		(btn: GridButton) => handleChordInput(btn.chord),
+		openGridPopover,
 	);
 
+	// ── Chip long-press (existing bar slot) ───────────────────────────────
+
+	const chipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const chipDidLong = useRef(false);
+
+	function onChipDown(slotIndex: number) {
+		chipDidLong.current = false;
+		chipTimer.current = setTimeout(() => {
+			chipDidLong.current = true;
+			if (currentContext?.type !== "bar") return;
+			const slot = currentBar?.slots[slotIndex];
+			if (!slot) return;
+			// Find grid button for this root
+			const btn = grid.find((b) => b.chord.root === slot.chord.root);
+			if (!btn) return; // out-of-key chord — skip
+			setEditingSlotIndex(slotIndex);
+			setPopoverInitialChord(slot.chord);
+			setPopoverTarget(btn);
+		}, LONG_PRESS_MS);
+	}
+
+	function onChipUp() {
+		if (chipTimer.current) {
+			clearTimeout(chipTimer.current);
+			chipTimer.current = null;
+		}
+		chipDidLong.current = false;
+	}
+
+	// ── Variant popover select ─────────────────────────────────────────────
+
 	const handleVariantSelect = useCallback(
-		(chord: Chord) => {
-			addChord(chord);
+		async (chord: Chord) => {
 			setPopoverTarget(null);
+			if (editingSlotIndex !== null && currentContext?.type === "bar") {
+				await replaceSlotInBar(
+					song.id,
+					currentContext.sectionId,
+					currentContext.partId,
+					currentContext.barId,
+					editingSlotIndex,
+					chord,
+				);
+			} else {
+				await handleChordInput(chord);
+			}
+			setEditingSlotIndex(null);
+			setPopoverInitialChord(undefined);
 		},
-		[addChord],
+		[editingSlotIndex, currentContext, song, handleChordInput],
+	);
+
+	// ── Single-chord preview ───────────────────────────────────────────────
+
+	const handlePlayChord = useCallback(
+		async (chord: Chord) => {
+			const tpb = ticksPerBar(song.timeSignature);
+			const bar = {
+				id: "pc0",
+				slots: [{ chord, startTick: 0, durationTicks: tpb }],
+			};
+			const part = { id: "pcp", bars: [bar], repeatCount: 1 };
+			const section = { id: "pcs", name: "Preview", parts: [part] };
+			await playerStore.play({
+				...song,
+				id: `${song.id}__chord`,
+				sections: [section],
+			});
+		},
+		[song, playerStore],
 	);
 
 	// ── Key change ─────────────────────────────────────────────────────────
@@ -267,56 +399,21 @@ export function ChordPanel({ song, currentSectionId }: Props) {
 		[song.id],
 	);
 
-	// ── Playback ───────────────────────────────────────────────────────────
+	// ── Delete bar ─────────────────────────────────────────────────────────
 
-	const handleSave = useCallback(async () => {
-		if (pendingChords.length === 0) return;
-		if (currentSectionId) {
-			await saveChordsToSection(song, currentSectionId, pendingChords);
-		} else {
-			await saveChordsToArrangement(song, pendingChords);
-		}
-		setPendingChords([]);
-	}, [pendingChords, song, currentSectionId]);
+	const handleDeleteBar = useCallback(async () => {
+		if (currentContext?.type !== "bar") return;
+		if (!window.confirm("Delete this bar?")) return;
+		await removeBar(
+			song.id,
+			currentContext.sectionId,
+			currentContext.partId,
+			currentContext.barId,
+		);
+		onContextChange({ type: "section", sectionId: currentContext.sectionId });
+	}, [currentContext, song, onContextChange]);
 
-	const handlePlayChord = useCallback(
-		async (chord: Chord) => {
-			const tpb = ticksPerBar(song.timeSignature);
-			const bar: Bar = {
-				id: "pc0",
-				slots: [{ chord, startTick: 0, durationTicks: tpb }],
-			};
-			const part: Part = { id: "pcp", bars: [bar], repeatCount: 1 };
-			const section: Section = { id: "pcs", name: "Preview", parts: [part] };
-			const previewSong: Song = {
-				...song,
-				id: `${song.id}__chord`,
-				sections: [section],
-			};
-			await playerStore.play(previewSong);
-		},
-		[song, playerStore],
-	);
-
-	const handleLoop = useCallback(async () => {
-		if (pendingChords.length === 0) return;
-		const tpb = ticksPerBar(song.timeSignature);
-		const bars: Bar[] = pendingChords.map((chord, i) => ({
-			id: `p${i}`,
-			slots: [{ chord, startTick: 0, durationTicks: tpb }],
-		}));
-		const part: Part = { id: "pp", bars, repeatCount: 1 };
-		const section: Section = { id: "ps", name: "Verse", parts: [part] };
-		const loopSong: Song = {
-			...song,
-			id: `${song.id}__loop`,
-			sections: [section],
-		};
-		await playerStore.play(loopSong);
-	}, [pendingChords, song, playerStore]);
-
-	const isPlaying = playerStore.state === "playing";
-	const isLoading = playerStore.isLoading;
+	// ─────────────────────────────────────────────────────────────────────
 
 	return (
 		<div className="chord-panel">
@@ -345,7 +442,6 @@ export function ChordPanel({ song, currentSectionId }: Props) {
 						onPointerUp={() => onUp(btn)}
 						onPointerCancel={onCancel}
 						onContextMenu={(e) => e.preventDefault()}
-						touch-action="none"
 					>
 						<span className="chord-btn-numeral">{btn.numeralLabel}</span>
 						<span className="chord-btn-name">{btn.chordName}</span>
@@ -353,63 +449,43 @@ export function ChordPanel({ song, currentSectionId }: Props) {
 				))}
 			</div>
 
-			{/* Pending chord strip */}
-			<div className="chord-pending-wrap">
-				<div className="chord-pending">
-					{pendingChords.length === 0 ? (
-						<span className="chord-pending-hint">
-							tap chords above to queue
-						</span>
-					) : (
-						pendingChords.map((chord, i) => (
-							<button
-								key={i}
-								className="chord-pending-item"
-								onClick={() =>
-									setPendingChords((prev) => prev.filter((_, j) => j !== i))
-								}
-								title="tap to remove"
-							>
-								{chordLabel(chord)}
-							</button>
-						))
-					)}
-				</div>
-			</div>
-
-			{/* Action bar */}
-			<div className="chord-action-bar">
-				<button
-					className="chord-clear-btn"
-					onClick={() => {
-						setPendingChords([]);
-						if (isPlaying) playerStore.stop();
-					}}
-					disabled={pendingChords.length === 0 && !isPlaying}
-				>
-					Clear
-				</button>
-
-				<button
-					className="chord-save-btn"
-					onClick={handleSave}
-					disabled={pendingChords.length === 0}
-				>
-					Save ↑
-				</button>
-
-				{isPlaying ? (
-					<button className="chord-stop-btn" onClick={() => playerStore.stop()}>
-						■ Stop
-					</button>
+			{/* Context strip */}
+			<div className="chord-context-strip">
+				{currentContext?.type === "bar" && currentBar ? (
+					<>
+						<div className="chord-context-chips">
+							{currentBar.slots.length === 0 ? (
+								<span className="chord-context-hint">empty bar</span>
+							) : (
+								currentBar.slots.map((slot, i) => (
+									<button
+										key={i}
+										className="chord-context-chip"
+										onPointerDown={() => onChipDown(i)}
+										onPointerUp={onChipUp}
+										onPointerCancel={onChipUp}
+										onContextMenu={(e) => e.preventDefault()}
+										title="Long-press to change variant"
+									>
+										{chordLabel(slot.chord)}
+									</button>
+								))
+							)}
+						</div>
+						<button
+							className="chord-context-delete"
+							onClick={handleDeleteBar}
+							aria-label="Delete bar"
+						>
+							🗑
+						</button>
+					</>
+				) : currentContext?.type === "section" && currentSectionName ? (
+					<span className="chord-context-section">→ {currentSectionName}</span>
 				) : (
-					<button
-						className="chord-loop-btn"
-						onClick={handleLoop}
-						disabled={pendingChords.length === 0 || isLoading}
-					>
-						{isLoading ? "Loading…" : "▶ Loop"}
-					</button>
+					<span className="chord-context-hint">
+						tap a section or bar to focus
+					</span>
 				)}
 			</div>
 
@@ -429,8 +505,13 @@ export function ChordPanel({ song, currentSectionId }: Props) {
 					songKey={song.key}
 					mode={song.mode}
 					instrument={song.instrument}
+					initialChord={popoverInitialChord}
 					onSelect={handleVariantSelect}
-					onClose={() => setPopoverTarget(null)}
+					onClose={() => {
+						setPopoverTarget(null);
+						setEditingSlotIndex(null);
+						setPopoverInitialChord(undefined);
+					}}
 					onPlayChord={handlePlayChord}
 				/>
 			)}

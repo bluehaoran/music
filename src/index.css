@@ -265,6 +265,7 @@ body {
 /* ─── Chord panel ────────────────────────────────────────────────────────── */
 
 .chord-panel {
+	background-color: var(--accent-bg);
 	display: flex;
 	flex-direction: column;
 	gap: 0;
@@ -684,6 +685,12 @@ body {
 	gap: 6px;
 }
 
+.score-section-footer {
+	display: flex;
+	align-items: right;
+	gap: 6px;
+}
+
 .score-section-name {
 	flex: 1;
 	font-size: 11px;
@@ -741,7 +748,7 @@ body {
 
 .score-bars {
 	display: flex;
-	gap: 6px;
+	gap: 0px;
 	padding: 2px 0 6px;
 	align-items: center;
 }
@@ -759,8 +766,10 @@ body {
 	min-width: 52px;
 	padding: 9px 12px;
 	background: var(--bg);
-	border: 1.5px solid var(--border);
-	border-radius: 10px;
+	border-style: solid;
+	border-color: var(--border);
+	border-width: 0 1.5px 0 1.5px;
+	border-radius: 0px;
 	font: inherit;
 	font-size: 15px;
 	font-weight: 700;
@@ -1830,4 +1839,152 @@ body {
 
 .import-btn--primary:active:not(:disabled) {
 	opacity: 0.85;
+}
+
+/* ─── Score view: selected bar + repeat control ──────────────────────────── */
+
+.score-bar-cell--selected {
+	border-color: var(--accent);
+	background: var(--accent-bg);
+	color: var(--accent);
+}
+
+.score-repeat-btn {
+	background: none;
+	border: none;
+	padding: 2px 6px;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text);
+	opacity: 0.3;
+	cursor: pointer;
+	touch-action: manipulation;
+	letter-spacing: -0.3px;
+	border-radius: 8px;
+	transition: opacity 80ms;
+}
+
+.score-repeat-btn:hover {
+	opacity: 0.7;
+}
+
+.score-repeat-btn--active {
+	opacity: 1;
+	color: var(--accent);
+	background: var(--accent-bg);
+}
+
+.score-repeat-btn--active:hover {
+	opacity: 1;
+}
+
+/* ─── Chord panel: context strip ─────────────────────────────────────────── */
+
+.chord-context-strip {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 40px;
+	padding: 6px 0 2px;
+	border-top: 1px solid var(--border);
+	margin-top: 4px;
+}
+
+.chord-context-chips {
+	display: flex;
+	gap: 6px;
+	flex: 1;
+	flex-wrap: wrap;
+}
+
+.chord-context-chip {
+	padding: 6px 12px;
+	background: var(--accent-bg);
+	border: 1.5px solid var(--accent-border);
+	border-radius: 10px;
+	font: inherit;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--accent);
+	cursor: pointer;
+	touch-action: manipulation;
+	letter-spacing: -0.3px;
+}
+
+.chord-context-chip:active {
+	opacity: 0.7;
+}
+
+.chord-context-hint {
+	flex: 1;
+	font-size: 13px;
+	color: var(--text);
+	opacity: 0.4;
+	font-style: italic;
+}
+
+.chord-context-section {
+	flex: 1;
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 0.8px;
+	text-transform: uppercase;
+	color: var(--accent);
+	opacity: 0.75;
+}
+
+.chord-context-delete {
+	background: none;
+	border: none;
+	font-size: 18px;
+	cursor: pointer;
+	opacity: 0.35;
+	padding: 4px 6px;
+	line-height: 1;
+	touch-action: manipulation;
+}
+
+.chord-context-delete:active {
+	opacity: 1;
+}
+
+/* ─── Editor: big play bar ───────────────────────────────────────────────── */
+
+.editor-play-bar {
+	padding: 10px 16px 20px;
+	flex-shrink: 0;
+}
+
+.editor-play-bar-btn {
+	width: 100%;
+	padding: 16px;
+	background: var(--accent);
+	color: #fff;
+	border: none;
+	border-radius: 14px;
+	font: inherit;
+	font-size: 16px;
+	font-weight: 600;
+	cursor: pointer;
+	touch-action: manipulation;
+	letter-spacing: 0.2px;
+}
+
+.editor-play-bar-btn:disabled {
+	opacity: 0.5;
+}
+
+.editor-play-bar-btn:active:not(:disabled) {
+	opacity: 0.85;
+}
+
+.editor-play-bar-btn--playing {
+	background: #444;
+}
+
+@media (prefers-color-scheme: dark) {
+	.editor-play-bar-btn--playing {
+		background: #333;
+	}
 }
