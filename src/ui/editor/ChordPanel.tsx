@@ -20,20 +20,31 @@ import type { Song, Bar, Part, Section } from "../../theory/model";
 import { getVoicing } from "../../theory/voicings";
 import { GuitarDiagram } from "./GuitarDiagram";
 import { ticksPerBar } from "../../theory/model";
-import {
-	buildDiatonicGrid,
-	variantsForDegree,
-} from "../../theory/nashville";
+import { buildDiatonicGrid, variantsForDegree } from "../../theory/nashville";
 import type { NashvilleNumeral } from "../../theory/scales";
 import type { NoteName, ScaleMode } from "../../theory/notes";
-import { updateSong, saveChordsToArrangement } from "../../data/songRepo";
+import {
+	updateSong,
+	saveChordsToArrangement,
+	saveChordsToSection,
+} from "../../data/songRepo";
 import { usePlayerStore } from "../../audio/playerStore";
 
 // ─── Key picker data ────────────────────────────────────────────────────────
 
 const ALL_KEYS: NoteName[] = [
-	"C", "Db", "D", "Eb", "E", "F",
-	"F#", "G", "Ab", "A", "Bb", "B",
+	"C",
+	"Db",
+	"D",
+	"Eb",
+	"E",
+	"F",
+	"F#",
+	"G",
+	"Ab",
+	"A",
+	"Bb",
+	"B",
 ];
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -93,9 +104,18 @@ interface VariantPopoverProps {
 	instrument: "guitar" | "piano";
 	onSelect: (chord: Chord) => void;
 	onClose: () => void;
+	onPlayChord: (chord: Chord) => void;
 }
 
-function VariantPopover({ target, songKey, mode, instrument, onSelect, onClose }: VariantPopoverProps) {
+function VariantPopover({
+	target,
+	songKey,
+	mode,
+	instrument,
+	onSelect,
+	onClose,
+	onPlayChord,
+}: VariantPopoverProps) {
 	const variants = variantsForDegree(target.numeral, songKey, mode);
 	const [previewChord, setPreviewChord] = useState<Chord>(target.chord);
 
@@ -106,19 +126,26 @@ function VariantPopover({ target, songKey, mode, instrument, onSelect, onClose }
 
 	return (
 		<div className="variant-overlay" onPointerDown={onClose}>
-			<div className="variant-popover" onPointerDown={(e) => e.stopPropagation()}>
+			<div
+				className="variant-popover"
+				onPointerDown={(e) => e.stopPropagation()}
+			>
 				<div className="variant-popover-title">
 					<span className="variant-popover-numeral">{target.numeralLabel}</span>
 					<span className="variant-popover-root"> — {target.chord.root}</span>
+					<button
+						className="variant-play-btn"
+						onClick={() => onPlayChord(previewChord)}
+						aria-label="Play chord"
+					>
+						▶
+					</button>
 				</div>
 
 				{/* Guitar diagram preview */}
 				{voicing && (
 					<div className="variant-diagram-row">
-						<GuitarDiagram
-							voicing={voicing}
-							label={chordLabel(previewChord)}
-						/>
+						<GuitarDiagram voicing={voicing} label={chordLabel(previewChord)} />
 					</div>
 				)}
 
@@ -152,7 +179,12 @@ interface KeyPickerProps {
 	onClose: () => void;
 }
 
-function KeyPicker({ currentKey, currentMode, onChange, onClose }: KeyPickerProps) {
+function KeyPicker({
+	currentKey,
+	currentMode,
+	onChange,
+	onClose,
+}: KeyPickerProps) {
 	return (
 		<div className="key-picker-overlay" onPointerDown={onClose}>
 			<div className="key-picker" onPointerDown={(e) => e.stopPropagation()}>
@@ -190,9 +222,10 @@ function KeyPicker({ currentKey, currentMode, onChange, onClose }: KeyPickerProp
 
 interface Props {
 	song: Song;
+	currentSectionId: string | null;
 }
 
-export function ChordPanel({ song }: Props) {
+export function ChordPanel({ song, currentSectionId }: Props) {
 	const [pendingChords, setPendingChords] = useState<Chord[]>([]);
 	const [popoverTarget, setPopoverTarget] = useState<GridButton | null>(null);
 	const [showKeyPicker, setShowKeyPicker] = useState(false);
@@ -238,9 +271,32 @@ export function ChordPanel({ song }: Props) {
 
 	const handleSave = useCallback(async () => {
 		if (pendingChords.length === 0) return;
-		await saveChordsToArrangement(song, pendingChords);
+		if (currentSectionId) {
+			await saveChordsToSection(song, currentSectionId, pendingChords);
+		} else {
+			await saveChordsToArrangement(song, pendingChords);
+		}
 		setPendingChords([]);
-	}, [pendingChords, song]);
+	}, [pendingChords, song, currentSectionId]);
+
+	const handlePlayChord = useCallback(
+		async (chord: Chord) => {
+			const tpb = ticksPerBar(song.timeSignature);
+			const bar: Bar = {
+				id: "pc0",
+				slots: [{ chord, startTick: 0, durationTicks: tpb }],
+			};
+			const part: Part = { id: "pcp", bars: [bar], repeatCount: 1 };
+			const section: Section = { id: "pcs", name: "Preview", parts: [part] };
+			const previewSong: Song = {
+				...song,
+				id: `${song.id}__chord`,
+				sections: [section],
+			};
+			await playerStore.play(previewSong);
+		},
+		[song, playerStore],
+	);
 
 	const handleLoop = useCallback(async () => {
 		if (pendingChords.length === 0) return;
@@ -273,7 +329,9 @@ export function ChordPanel({ song }: Props) {
 				>
 					<span className="chord-key-root">{song.key}</span>
 					<span className="chord-key-mode">{song.mode}</span>
-					<span className="chord-key-caret" aria-hidden>▾</span>
+					<span className="chord-key-caret" aria-hidden>
+						▾
+					</span>
 				</button>
 			</div>
 
@@ -299,7 +357,9 @@ export function ChordPanel({ song }: Props) {
 			<div className="chord-pending-wrap">
 				<div className="chord-pending">
 					{pendingChords.length === 0 ? (
-						<span className="chord-pending-hint">tap chords above to queue</span>
+						<span className="chord-pending-hint">
+							tap chords above to queue
+						</span>
 					) : (
 						pendingChords.map((chord, i) => (
 							<button
@@ -371,6 +431,7 @@ export function ChordPanel({ song }: Props) {
 					instrument={song.instrument}
 					onSelect={handleVariantSelect}
 					onClose={() => setPopoverTarget(null)}
+					onPlayChord={handlePlayChord}
 				/>
 			)}
 		</div>

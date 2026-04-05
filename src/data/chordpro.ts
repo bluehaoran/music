@@ -224,13 +224,10 @@ export function importChordPro(text: string): ChordProImport {
 			} else if (dirKey.startsWith("start_of_")) {
 				flushBars();
 				if (val) {
-					currentSectionName =
-						val.charAt(0).toUpperCase() + val.slice(1);
+					currentSectionName = val.charAt(0).toUpperCase() + val.slice(1);
 				} else {
 					// Derive from tag, e.g. "start_of_chorus" → "Chorus"
-					const derived = dirKey
-						.replace("start_of_", "")
-						.replace(/_/g, " ");
+					const derived = dirKey.replace("start_of_", "").replace(/_/g, " ");
 					currentSectionName =
 						derived.charAt(0).toUpperCase() + derived.slice(1);
 				}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../../data/db";
 import type { Bar } from "../../theory/model";
@@ -8,6 +8,7 @@ import { BarEditSheet } from "./BarEditSheet";
 import { SongSettingsSheet } from "./SongSettingsSheet";
 import { LyricsSheet } from "./LyricsSheet";
 import { ExportSheet } from "./ExportSheet";
+import { usePlayerStore } from "../../audio/playerStore";
 
 interface Props {
 	songId: string;
@@ -25,6 +26,31 @@ export function EditorScreen({ songId }: Props) {
 	const [showSettings, setShowSettings] = useState(false);
 	const [showLyrics, setShowLyrics] = useState(false);
 	const [showExport, setShowExport] = useState(false);
+	const [currentSectionId, setCurrentSectionId] = useState<string | null>(null);
+
+	const playerStore = usePlayerStore();
+	const isPlaying = playerStore.state === "playing";
+	const isLoading = playerStore.isLoading;
+
+	const handleSetCurrentSection = useCallback((sectionId: string) => {
+		setCurrentSectionId((prev) => (prev === sectionId ? prev : sectionId));
+	}, []);
+
+	const handlePlayStop = useCallback(async () => {
+		if (!song) return;
+		if (isPlaying) {
+			playerStore.stop();
+			return;
+		}
+		if (currentSectionId) {
+			const section = song.sections.find((s) => s.id === currentSectionId);
+			if (section) {
+				await playerStore.play({ ...song, sections: [section] });
+				return;
+			}
+		}
+		await playerStore.play(song);
+	}, [song, isPlaying, currentSectionId, playerStore]);
 
 	if (song === undefined) {
 		return <div className="editor-loading">Loading…</div>;
@@ -33,6 +59,10 @@ export function EditorScreen({ songId }: Props) {
 	if (song === null) {
 		return <div className="editor-loading">Song not found.</div>;
 	}
+
+	const currentSectionName = currentSectionId
+		? (song.sections.find((s) => s.id === currentSectionId)?.name ?? null)
+		: null;
 
 	return (
 		<div className="editor-root">
@@ -48,6 +78,40 @@ export function EditorScreen({ songId }: Props) {
 				{song.drumPatternId && (
 					<span className="editor-meta-chip editor-meta-chip--drum">drums</span>
 				)}
+
+				{/* Contextual play button */}
+				<button
+					className={[
+						"editor-play-btn",
+						isPlaying ? "editor-play-btn--playing" : "",
+					]
+						.filter(Boolean)
+						.join(" ")}
+					onClick={handlePlayStop}
+					disabled={isLoading}
+					aria-label={
+						isPlaying
+							? "Stop"
+							: currentSectionName
+								? `Play ${currentSectionName}`
+								: "Play song"
+					}
+					title={
+						isPlaying
+							? "Stop"
+							: currentSectionName
+								? `Play ${currentSectionName}`
+								: "Play song"
+					}
+				>
+					{isLoading ? "…" : isPlaying ? "■" : "▶"}
+					{!isPlaying && currentSectionName && (
+						<span className="editor-play-btn-context">
+							{currentSectionName}
+						</span>
+					)}
+				</button>
+
 				<button
 					className="editor-lyrics-btn"
 					onClick={() => setShowLyrics(true)}
@@ -70,10 +134,12 @@ export function EditorScreen({ songId }: Props) {
 					onEditBar={(sectionId, partId, bar) =>
 						setEditTarget({ sectionId, partId, bar })
 					}
+					currentSectionId={currentSectionId}
+					onSetCurrentSection={handleSetCurrentSection}
 				/>
 			</div>
 
-			<ChordPanel song={song} />
+			<ChordPanel song={song} currentSectionId={currentSectionId} />
 
 			{editTarget && (
 				<BarEditSheet
@@ -89,7 +155,10 @@ export function EditorScreen({ songId }: Props) {
 				<SongSettingsSheet
 					song={song}
 					onClose={() => setShowSettings(false)}
-					onExport={() => { setShowSettings(false); setShowExport(true); }}
+					onExport={() => {
+						setShowSettings(false);
+						setShowExport(true);
+					}}
 				/>
 			)}
 
@@ -98,10 +167,7 @@ export function EditorScreen({ songId }: Props) {
 			)}
 
 			{showLyrics && (
-				<LyricsSheet
-					song={song}
-					onClose={() => setShowLyrics(false)}
-				/>
+				<LyricsSheet song={song} onClose={() => setShowLyrics(false)} />
 			)}
 		</div>
 	);

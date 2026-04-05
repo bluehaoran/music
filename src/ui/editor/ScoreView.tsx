@@ -23,6 +23,8 @@ import {
 interface Props {
 	song: Song;
 	onEditBar: (sectionId: string, partId: string, bar: Bar) => void;
+	currentSectionId: string | null;
+	onSetCurrentSection: (sectionId: string) => void;
 }
 
 interface BarRef {
@@ -41,7 +43,12 @@ function buildBarRefs(song: Song): BarRef[] {
 		for (const part of sec.parts) {
 			for (let rep = 0; rep < part.repeatCount; rep++) {
 				for (const bar of part.bars) {
-					refs.push({ sectionId: sec.id, partId: part.id, barId: bar.id, globalIndex: idx++ });
+					refs.push({
+						sectionId: sec.id,
+						partId: part.id,
+						barId: bar.id,
+						globalIndex: idx++,
+					});
 				}
 			}
 		}
@@ -49,7 +56,14 @@ function buildBarRefs(song: Song): BarRef[] {
 	return refs;
 }
 
-const SECTION_NAMES = ["Verse", "Chorus", "Bridge", "Intro", "Outro", "Interlude"];
+const SECTION_NAMES = [
+	"Verse",
+	"Chorus",
+	"Bridge",
+	"Intro",
+	"Outro",
+	"Interlude",
+];
 
 // ─── BarCell ──────────────────────────────────────────────────────────────────
 
@@ -80,16 +94,19 @@ function BarCell({
 			onClick={onClick}
 		>
 			<span className="score-bar-chord">{label}</span>
-			{bar.lyric && (
-				<span className="score-bar-lyric">{bar.lyric}</span>
-			)}
+			{bar.lyric && <span className="score-bar-lyric">{bar.lyric}</span>}
 		</button>
 	);
 }
 
 // ─── ScoreView ────────────────────────────────────────────────────────────────
 
-export function ScoreView({ song, onEditBar }: Props) {
+export function ScoreView({
+	song,
+	onEditBar,
+	currentSectionId,
+	onSetCurrentSection,
+}: Props) {
 	const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 	const [nameDraft, setNameDraft] = useState("");
 	const nameInputRef = useRef<HTMLInputElement>(null);
@@ -98,7 +115,8 @@ export function ScoreView({ song, onEditBar }: Props) {
 	const playState = usePlayerStore((s) => s.state);
 
 	const barRefs = useMemo(() => buildBarRefs(song), [song]);
-	const playingRef = playState === "playing" ? barRefs[currentBarIndex] ?? null : null;
+	const playingRef =
+		playState === "playing" ? (barRefs[currentBarIndex] ?? null) : null;
 
 	function isBarPlaying(sectionId: string, partId: string, barId: string) {
 		return (
@@ -151,62 +169,81 @@ export function ScoreView({ song, onEditBar }: Props) {
 
 	return (
 		<div className="score-view">
-			{song.sections.map((section) => (
-				<div key={section.id} className="score-section">
-					{/* Section header */}
-					<div className="score-section-header">
-						{editingSectionId === section.id ? (
-							<input
-								ref={nameInputRef}
-								className="score-section-name-input"
-								value={nameDraft}
-								onChange={(e) => setNameDraft(e.target.value)}
-								onBlur={() => commitRename(section.id)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") commitRename(section.id);
-									if (e.key === "Escape") setEditingSectionId(null);
-								}}
-							/>
-						) : (
-							<span
-								className="score-section-name"
-								onClick={() => startRename(section.id, section.name)}
+			{song.sections.map((section) => {
+				const isCurrent = section.id === currentSectionId;
+				return (
+					<div
+						key={section.id}
+						className={[
+							"score-section",
+							isCurrent ? "score-section--current" : "",
+						]
+							.filter(Boolean)
+							.join(" ")}
+					>
+						{/* Section header */}
+						<div className="score-section-header">
+							{editingSectionId === section.id ? (
+								<input
+									ref={nameInputRef}
+									className="score-section-name-input"
+									value={nameDraft}
+									onChange={(e) => setNameDraft(e.target.value)}
+									onBlur={() => commitRename(section.id)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") commitRename(section.id);
+										if (e.key === "Escape") setEditingSectionId(null);
+									}}
+								/>
+							) : (
+								<span
+									className="score-section-name"
+									onClick={() => {
+										onSetCurrentSection(section.id);
+										startRename(section.id, section.name);
+									}}
+								>
+									{section.name}
+								</span>
+							)}
+							<button
+								className="score-section-delete"
+								onClick={() => handleDeleteSection(section.id)}
+								aria-label="Delete section"
 							>
-								{section.name}
-							</span>
-						)}
-						<button
-							className="score-section-delete"
-							onClick={() => handleDeleteSection(section.id)}
-							aria-label="Delete section"
-						>
-							×
-						</button>
-					</div>
+								×
+							</button>
+						</div>
 
-					{/* Parts */}
-					{section.parts.map((part) => (
-						<div key={part.id} className="score-part">
-							<div className="score-bars-scroll">
-								<div className="score-bars">
-									{part.bars.length === 0 ? (
-										<span className="score-empty-part">empty — save chords above</span>
-									) : (
-										part.bars.map((bar) => (
-											<BarCell
-												key={bar.id}
-												bar={bar}
-												isPlaying={isBarPlaying(section.id, part.id, bar.id)}
-												onClick={() => onEditBar(section.id, part.id, bar)}
-											/>
-										))
-									)}
+						{/* Parts */}
+						{section.parts.map((part) => (
+							<div key={part.id} className="score-part">
+								<div className="score-bars-scroll">
+									<div className="score-bars">
+										{part.bars.length === 0 ? (
+											<span className="score-empty-part">
+												empty — save chords above
+											</span>
+										) : (
+											part.bars.map((bar) => (
+												<BarCell
+													key={bar.id}
+													bar={bar}
+													isPlaying={isBarPlaying(section.id, part.id, bar.id)}
+													onClick={() => {
+														onSetCurrentSection(section.id);
+														onEditBar(section.id, part.id, bar);
+													}}
+												/>
+											))
+										)}
+									</div>
 								</div>
 							</div>
-						</div>
-					))}
-				</div>
-			))}
+						))}
+					</div>
+				);
+			})}
 
 			<button className="score-add-section-btn" onClick={handleAddSection}>
 				+ Add section

@@ -49,10 +49,7 @@ export function ImportSheet({ onImport, onClose }: Props) {
 
 	return (
 		<div className="import-overlay" onPointerDown={onClose}>
-			<div
-				className="import-sheet"
-				onPointerDown={(e) => e.stopPropagation()}
-			>
+			<div className="import-sheet" onPointerDown={(e) => e.stopPropagation()}>
 				<div className="import-header">
 					<span className="import-title">Import ChordPro</span>
 					<button className="import-close" onClick={onClose} aria-label="Close">
@@ -60,13 +57,17 @@ export function ImportSheet({ onImport, onClose }: Props) {
 					</button>
 				</div>
 				<p className="import-hint">
-					Paste ChordPro text, or open a <span className="import-code">.cho</span> file.
+					Paste ChordPro text, or open a{" "}
+					<span className="import-code">.cho</span> file.
 				</p>
 
 				<textarea
 					className="import-textarea"
 					value={text}
-					onChange={(e) => { setText(e.target.value); setError(null); }}
+					onChange={(e) => {
+						setText(e.target.value);
+						setError(null);
+					}}
 					placeholder={
 						"{title: My Song}\n{key: C major}\n\n{start_of_verse: Verse}\n[C]Hello [Am]world [F]these [G7]chords\n{end_of_verse}"
 					}

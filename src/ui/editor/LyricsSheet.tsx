@@ -67,10 +67,7 @@ export function LyricsSheet({ song, onClose }: Props) {
 
 	return (
 		<div className="lyrics-overlay" onPointerDown={onClose}>
-			<div
-				className="lyrics-sheet"
-				onPointerDown={(e) => e.stopPropagation()}
-			>
+			<div className="lyrics-sheet" onPointerDown={(e) => e.stopPropagation()}>
 				{/* Header */}
 				<div className="lyrics-header">
 					<span className="lyrics-title">Lyrics</span>

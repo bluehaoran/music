@@ -17,17 +17,21 @@ interface Props {
 
 const STRINGS = 6;
 const FRETS = 4;
-const SS = 16;   // string spacing px
-const FS = 18;   // fret spacing px
-const LM = 20;   // left margin (fret label area)
-const TM = 18;   // top margin (x / o markers)
-const DR = 5.5;  // dot radius
+const SS = 16; // string spacing px
+const FS = 18; // fret spacing px
+const LM = 20; // left margin (fret label area)
+const TM = 18; // top margin (x / o markers)
+const DR = 5.5; // dot radius
 
 const W = LM + (STRINGS - 1) * SS + 10;
 const H = TM + FRETS * FS + 10;
 
-function sx(i: number) { return LM + i * SS; }
-function fy(f: number) { return TM + f * FS; } // y of fret line f (0 = nut)
+function sx(i: number) {
+	return LM + i * SS;
+}
+function fy(f: number) {
+	return TM + f * FS;
+} // y of fret line f (0 = nut)
 function dotY(fret: number, startFret: number) {
 	return TM + (fret - startFret + 0.5) * FS;
 }
@@ -63,8 +67,10 @@ export function GuitarDiagram({ voicing, label }: Props) {
 				{Array.from({ length: FRETS + 1 }, (_, fi) => (
 					<line
 						key={fi}
-						x1={sx(0)} y1={fy(fi)}
-						x2={sx(STRINGS - 1)} y2={fy(fi)}
+						x1={sx(0)}
+						y1={fy(fi)}
+						x2={sx(STRINGS - 1)}
+						y2={fy(fi)}
 						stroke="currentColor"
 						strokeOpacity={fi === 0 ? 0.65 : 0.25}
 						strokeWidth={fi === 0 && showNut ? 2.5 : 0.8}
@@ -75,8 +81,10 @@ export function GuitarDiagram({ voicing, label }: Props) {
 				{Array.from({ length: STRINGS }, (_, si) => (
 					<line
 						key={si}
-						x1={sx(si)} y1={fy(0)}
-						x2={sx(si)} y2={fy(FRETS)}
+						x1={sx(si)}
+						y1={fy(0)}
+						x2={sx(si)}
+						y2={fy(FRETS)}
 						stroke="currentColor"
 						strokeOpacity={0.25}
 						strokeWidth={0.8}
@@ -134,22 +142,23 @@ export function GuitarDiagram({ voicing, label }: Props) {
 				})}
 
 				{/* Barre bar */}
-				{showBarre && (() => {
-					const firstStr = barreIndices[0];
-					const lastStr = barreIndices[barreIndices.length - 1];
-					const by = dotY(barreFret, startFret);
-					return (
-						<rect
-							x={sx(firstStr) - DR}
-							y={by - DR}
-							width={sx(lastStr) - sx(firstStr) + DR * 2}
-							height={DR * 2}
-							rx={DR}
-							fill="currentColor"
-							opacity={0.85}
-						/>
-					);
-				})()}
+				{showBarre &&
+					(() => {
+						const firstStr = barreIndices[0];
+						const lastStr = barreIndices[barreIndices.length - 1];
+						const by = dotY(barreFret, startFret);
+						return (
+							<rect
+								x={sx(firstStr) - DR}
+								y={by - DR}
+								width={sx(lastStr) - sx(firstStr) + DR * 2}
+								height={DR * 2}
+								rx={DR}
+								fill="currentColor"
+								opacity={0.85}
+							/>
+						);
+					})()}
 
 				{/* Finger dots */}
 				{voicing.map((fret, si) => {
@@ -157,7 +166,8 @@ export function GuitarDiagram({ voicing, label }: Props) {
 					const relFret = fret - startFret;
 					if (relFret < 0 || relFret >= FRETS) return null;
 					// Skip if covered by barre to avoid overlap
-					if (showBarre && fret === barreFret && barreIndices.includes(si)) return null;
+					if (showBarre && fret === barreFret && barreIndices.includes(si))
+						return null;
 					return (
 						<circle
 							key={si}

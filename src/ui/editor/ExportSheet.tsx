@@ -67,15 +67,24 @@ export function ExportSheet({ song, onClose }: Props) {
 				/>
 
 				<div className="export-actions">
-					<button className="export-btn export-btn--secondary" onClick={handleDownload}>
+					<button
+						className="export-btn export-btn--secondary"
+						onClick={handleDownload}
+					>
 						Download
 					</button>
 					{canShare && (
-						<button className="export-btn export-btn--secondary" onClick={handleShare}>
+						<button
+							className="export-btn export-btn--secondary"
+							onClick={handleShare}
+						>
 							Share
 						</button>
 					)}
-					<button className="export-btn export-btn--primary" onClick={handleCopy}>
+					<button
+						className="export-btn export-btn--primary"
+						onClick={handleCopy}
+					>
 						{copied ? "Copied!" : "Copy"}
 					</button>
 				</div>

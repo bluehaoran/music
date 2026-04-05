@@ -62,12 +62,20 @@ export function SongSettingsSheet({ song, onClose, onExport }: Props) {
 
 	return (
 		<div className="settings-overlay" onPointerDown={onClose}>
-			<div className="settings-sheet" onPointerDown={(e) => e.stopPropagation()}>
-
+			<div
+				className="settings-sheet"
+				onPointerDown={(e) => e.stopPropagation()}
+			>
 				{/* Header */}
 				<div className="settings-header">
 					<span className="settings-title">Song Settings</span>
-					<button className="settings-close" onClick={onClose} aria-label="Close">×</button>
+					<button
+						className="settings-close"
+						onClick={onClose}
+						aria-label="Close"
+					>
+						×
+					</button>
 				</div>
 
 				{/* Instrument */}

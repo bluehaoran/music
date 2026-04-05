@@ -31,7 +31,10 @@ export async function addSong(options: NewSongOptions = {}) {
 	});
 }
 
-export async function updateSong(id: string, partial: Partial<Omit<Song, "id">>) {
+export async function updateSong(
+	id: string,
+	partial: Partial<Omit<Song, "id">>,
+) {
 	await db.songs.update(id, { ...partial, updatedAt: Date.now() });
 }
 
@@ -113,7 +116,10 @@ export async function replaceBar(
 						parts: sec.parts.map((p) =>
 							p.id !== partId
 								? p
-								: { ...p, bars: p.bars.map((b) => (b.id === bar.id ? bar : b)) },
+								: {
+										...p,
+										bars: p.bars.map((b) => (b.id === bar.id ? bar : b)),
+									},
 						),
 					},
 		),
@@ -184,4 +190,21 @@ export async function saveChordsToArrangement(
 		const lastPart = lastSec.parts[lastSec.parts.length - 1];
 		await addBars(song.id, lastSec.id, lastPart.id, bars);
 	}
+}
+
+/**
+ * Save pending chords into a specific section's last part.
+ * Falls back to saveChordsToArrangement if the section is not found.
+ */
+export async function saveChordsToSection(
+	song: Song,
+	sectionId: string,
+	chords: Chord[],
+): Promise<void> {
+	if (chords.length === 0) return;
+	const sec = song.sections.find((s) => s.id === sectionId);
+	if (!sec) return saveChordsToArrangement(song, chords);
+	const bars = chords.map((chord) => createBar([chord], song.timeSignature));
+	const lastPart = sec.parts[sec.parts.length - 1];
+	await addBars(song.id, sec.id, lastPart.id, bars);
 }

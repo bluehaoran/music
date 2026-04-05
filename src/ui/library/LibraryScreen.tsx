@@ -7,7 +7,9 @@ import type { ChordProImport } from "../../data/chordpro";
 import { ImportSheet } from "./ImportSheet";
 
 export function LibraryScreen() {
-	const songs = useLiveQuery(() => db.songs.orderBy("updatedAt").reverse().toArray());
+	const songs = useLiveQuery(() =>
+		db.songs.orderBy("updatedAt").reverse().toArray(),
+	);
 	const goToEditor = useNavStore((s) => s.goToEditor);
 	const [showImport, setShowImport] = useState(false);
 
