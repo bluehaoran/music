@@ -13,6 +13,7 @@ import * as Tone from "tone";
 import { chordToMidi } from "../theory/chords";
 import { ticksPerBar } from "../theory/model";
 import type { Song } from "../theory/model";
+import { drumEngine, BUILTIN_PATTERNS } from "./drums";
 
 // ─── MIDI → note name ────────────────────────────────────────────────────────
 
@@ -183,6 +184,17 @@ export class AudioEngine {
 			}
 		}
 
+		// ── Drum scheduling ────────────────────────────────────────────────────
+		const drumPattern = song.drumPatternId
+			? BUILTIN_PATTERNS.find((p) => p.id === song.drumPatternId)
+			: null;
+		if (drumPattern) {
+			drumEngine.init();
+			drumEngine.schedule(drumPattern, spTick, tpb);
+		} else {
+			drumEngine.clearParts();
+		}
+
 		if (chordEvents.length === 0) return;
 
 		transport.loop = true;
@@ -232,6 +244,7 @@ export class AudioEngine {
 	private clearParts(): void {
 		for (const p of this.parts) p.dispose();
 		this.parts = [];
+		drumEngine.clearParts();
 	}
 }
 

@@ -17,6 +17,8 @@ import { useState, useRef, useCallback } from "react";
 import { chordLabel, QUALITY_SUFFIX } from "../../theory/chords";
 import type { Chord, ChordQuality } from "../../theory/chords";
 import type { Song, Bar, Part, Section } from "../../theory/model";
+import { getVoicing } from "../../theory/voicings";
+import { GuitarDiagram } from "./GuitarDiagram";
 import { ticksPerBar } from "../../theory/model";
 import {
 	buildDiatonicGrid,
@@ -24,7 +26,7 @@ import {
 } from "../../theory/nashville";
 import type { NashvilleNumeral } from "../../theory/scales";
 import type { NoteName, ScaleMode } from "../../theory/notes";
-import { updateSong } from "../../data/songRepo";
+import { updateSong, saveChordsToArrangement } from "../../data/songRepo";
 import { usePlayerStore } from "../../audio/playerStore";
 
 // ─── Key picker data ────────────────────────────────────────────────────────
@@ -88,12 +90,20 @@ interface VariantPopoverProps {
 	target: GridButton;
 	songKey: NoteName;
 	mode: ScaleMode;
+	instrument: "guitar" | "piano";
 	onSelect: (chord: Chord) => void;
 	onClose: () => void;
 }
 
-function VariantPopover({ target, songKey, mode, onSelect, onClose }: VariantPopoverProps) {
+function VariantPopover({ target, songKey, mode, instrument, onSelect, onClose }: VariantPopoverProps) {
 	const variants = variantsForDegree(target.numeral, songKey, mode);
+	const [previewChord, setPreviewChord] = useState<Chord>(target.chord);
+
+	const voicing =
+		instrument === "guitar"
+			? getVoicing(previewChord.root, previewChord.quality)
+			: null;
+
 	return (
 		<div className="variant-overlay" onPointerDown={onClose}>
 			<div className="variant-popover" onPointerDown={(e) => e.stopPropagation()}>
@@ -101,11 +111,24 @@ function VariantPopover({ target, songKey, mode, onSelect, onClose }: VariantPop
 					<span className="variant-popover-numeral">{target.numeralLabel}</span>
 					<span className="variant-popover-root"> — {target.chord.root}</span>
 				</div>
+
+				{/* Guitar diagram preview */}
+				{voicing && (
+					<div className="variant-diagram-row">
+						<GuitarDiagram
+							voicing={voicing}
+							label={chordLabel(previewChord)}
+						/>
+					</div>
+				)}
+
 				<div className="variant-grid">
 					{variants.map((v) => (
 						<button
 							key={v.quality}
-							className={`variant-btn${v.quality === target.chord.quality ? " variant-btn--natural" : ""}`}
+							className={`variant-btn${v.quality === target.chord.quality ? " variant-btn--natural" : ""}${v.quality === previewChord.quality ? " variant-btn--previewed" : ""}`}
+							onPointerEnter={() => setPreviewChord(v.chord)}
+							onPointerDown={() => setPreviewChord(v.chord)}
 							onClick={() => onSelect(v.chord)}
 						>
 							<span className="variant-btn-name">{v.label}</span>
@@ -213,6 +236,12 @@ export function ChordPanel({ song }: Props) {
 
 	// ── Playback ───────────────────────────────────────────────────────────
 
+	const handleSave = useCallback(async () => {
+		if (pendingChords.length === 0) return;
+		await saveChordsToArrangement(song, pendingChords);
+		setPendingChords([]);
+	}, [pendingChords, song]);
+
 	const handleLoop = useCallback(async () => {
 		if (pendingChords.length === 0) return;
 		const tpb = ticksPerBar(song.timeSignature);
@@ -301,6 +330,14 @@ export function ChordPanel({ song }: Props) {
 					Clear
 				</button>
 
+				<button
+					className="chord-save-btn"
+					onClick={handleSave}
+					disabled={pendingChords.length === 0}
+				>
+					Save ↑
+				</button>
+
 				{isPlaying ? (
 					<button className="chord-stop-btn" onClick={() => playerStore.stop()}>
 						■ Stop
@@ -331,6 +368,7 @@ export function ChordPanel({ song }: Props) {
 					target={popoverTarget}
 					songKey={song.key}
 					mode={song.mode}
+					instrument={song.instrument}
 					onSelect={handleVariantSelect}
 					onClose={() => setPopoverTarget(null)}
 				/>
