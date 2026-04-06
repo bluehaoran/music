@@ -4,8 +4,7 @@
  */
 
 import { useMemo, useRef, useState } from "react";
-import { chordLabel } from "../../theory/chords";
-import type { Bar, Song } from "../../theory/model";
+import type { Song } from "../../theory/model";
 import { usePlayerStore } from "../../audio/playerStore";
 import {
 	addSection as addSectionRepo,
@@ -16,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { CurrentContext } from "./types";
 import { RepeatControl } from "./RepeatControl";
+import { BarCell } from "./BarCell";
 
 interface Props {
 	song: Song;
@@ -58,49 +58,6 @@ const SECTION_NAMES = [
 	"Outro",
 	"Interlude",
 ];
-
-// ─── BarCell ──────────────────────────────────────────────────────────────────
-
-function BarCell({
-	bar,
-	isPlaying,
-	isSelected,
-	onClick,
-}: {
-	bar: Bar;
-	isPlaying: boolean;
-	isSelected: boolean;
-	onClick: () => void;
-}) {
-	const label =
-		bar.slots.length === 0
-			? "?"
-			: bar.slots.map((s) => chordLabel(s.chord)).join("·");
-
-	return (
-		<button
-			className={[
-				"flex flex-col items-start px-2 py-1.5 rounded border text-left min-w-[56px] select-none",
-				isPlaying
-					? "border-primary bg-primary/20 text-primary"
-					: isSelected
-						? "border-primary/60 bg-primary/10"
-						: "border-border bg-card hover:bg-muted",
-				bar.slots.length === 0 ? "opacity-50" : "",
-			]
-				.filter(Boolean)
-				.join(" ")}
-			onClick={onClick}
-		>
-			<span className="text-sm font-medium leading-tight">{label}</span>
-			{bar.lyric && (
-				<span className="text-xs text-muted-foreground leading-tight truncate max-w-full">
-					{bar.lyric}
-				</span>
-			)}
-		</button>
-	);
-}
 
 // ─── ScoreView ────────────────────────────────────────────────────────────────
 

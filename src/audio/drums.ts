@@ -54,12 +54,18 @@ export const BUILTIN_PATTERNS: DrumPattern[] = [
 		timeSignature: { numerator: 3, denominator: 4 },
 		strudel: "bd ~ ~, ~ sn ~, hh hh hh hh hh hh",
 	},
+	{
+		id: "waltz68",
+		name: "Waltz68",
+		timeSignature: { numerator: 6, denominator: 8 },
+		strudel: "bd ~ ~ ~ ~ ~, ~ hh hh ~ hh hh, sn ~ ~ sn ~ ~",
+	},
 ];
 
 // ─── Strudel parser ──────────────────────────────────────────────────────────
 
-type DrumSound = "bd" | "sn" | "hh" | "oh";
-const DRUM_SOUNDS: Set<string> = new Set(["bd", "sn", "hh", "oh"]);
+type DrumSound = "bd" | "sn" | "sd" | "hh" | "oh";
+const DRUM_SOUNDS: Set<string> = new Set(["bd", "sd", "hh", "oh"]);
 
 interface DrumHit {
 	sound: DrumSound;

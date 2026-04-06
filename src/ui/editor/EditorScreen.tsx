@@ -7,9 +7,21 @@ import { SongSettingsSheet } from "./SongSettingsSheet";
 import { LyricsSheet } from "./LyricsSheet";
 import { ExportSheet } from "./ExportSheet";
 import { usePlayerStore } from "../../audio/playerStore";
+import { updateSong } from "../../data/songRepo";
+import { patternsForTimeSig } from "../../audio/drums";
+import type { TimeSignature } from "../../theory/model";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { CurrentContext } from "./types";
+
+const TIME_SIGS: TimeSignature[] = [
+	{ numerator: 4, denominator: 4 },
+	{ numerator: 3, denominator: 4 },
+	{ numerator: 6, denominator: 8 },
+	{ numerator: 2, denominator: 4 },
+];
+
+const INSTRUMENTS = ["guitar", "piano"] as const;
 
 interface Props {
 	songId: string;
@@ -25,6 +37,43 @@ export function EditorScreen({ songId }: Props) {
 	const playerStore = usePlayerStore();
 	const isPlaying = playerStore.state === "playing";
 	const isLoading = playerStore.isLoading;
+
+	const handleCycleInstrument = useCallback(async () => {
+		if (!song) return;
+		const idx = INSTRUMENTS.indexOf(song.instrument);
+		const next = INSTRUMENTS[(idx + 1) % INSTRUMENTS.length];
+		await updateSong(song.id, { instrument: next });
+	}, [song]);
+
+	const handleCycleTimeSig = useCallback(async () => {
+		if (!song) return;
+		const idx = TIME_SIGS.findIndex(
+			(ts) =>
+				ts.numerator === song.timeSignature.numerator &&
+				ts.denominator === song.timeSignature.denominator,
+		);
+		const next = TIME_SIGS[(idx + 1) % TIME_SIGS.length];
+		// Reset drum pattern if incompatible
+		const compatible = patternsForTimeSig(next);
+		const drumPatternId =
+			song.drumPatternId && !compatible.find((p) => p.id === song.drumPatternId)
+				? null
+				: song.drumPatternId;
+		await updateSong(song.id, { timeSignature: next, drumPatternId });
+	}, [song]);
+
+	const handleCycleDrums = useCallback(async () => {
+		if (!song) return;
+		const patterns = patternsForTimeSig(song.timeSignature);
+		// Cycle: null → patterns[0] → patterns[1] → … → null
+		if (song.drumPatternId === null) {
+			await updateSong(song.id, { drumPatternId: patterns[0]?.id ?? null });
+		} else {
+			const idx = patterns.findIndex((p) => p.id === song.drumPatternId);
+			const next = idx + 1 < patterns.length ? patterns[idx + 1].id : null;
+			await updateSong(song.id, { drumPatternId: next });
+		}
+	}, [song]);
 
 	const handlePlayStop = useCallback(async () => {
 		if (!song) return;
@@ -84,16 +133,35 @@ export function EditorScreen({ songId }: Props) {
 			{/* Meta chips */}
 			<div className="flex items-center gap-1.5 px-3 py-2 flex-wrap border-b border-border">
 				<Badge variant="secondary">{song.bpm} BPM</Badge>
-				<Badge variant="secondary">
+				<Badge
+					variant="secondary"
+					className="cursor-pointer select-none"
+					onClick={handleCycleTimeSig}
+				>
 					{song.timeSignature.numerator}/{song.timeSignature.denominator}
 				</Badge>
-				<Badge variant="secondary">{song.instrument}</Badge>
+				<Badge
+					variant="secondary"
+					className="cursor-pointer select-none capitalize"
+					onClick={handleCycleInstrument}
+				>
+					{song.instrument}
+				</Badge>
 				{song.capo > 0 && <Badge variant="secondary">capo {song.capo}</Badge>}
-				{song.drumPatternId && (
-					<Badge variant="outline" className="text-primary border-primary/40">
-						drums
-					</Badge>
-				)}
+				<Badge
+					variant={song.drumPatternId ? "outline" : "secondary"}
+					className={[
+						"cursor-pointer select-none",
+						song.drumPatternId
+							? "text-primary border-primary/40"
+							: "opacity-40",
+					].join(" ")}
+					onClick={handleCycleDrums}
+				>
+					{song.drumPatternId
+						? `Drums: ${patternsForTimeSig(song.timeSignature).find((p) => p.id === song.drumPatternId)?.name ?? "Drums"}`
+						: "Drums"}
+				</Badge>
 				<div className="flex-1" />
 				<Button
 					variant="ghost"
