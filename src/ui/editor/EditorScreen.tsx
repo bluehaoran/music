@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../../data/db";
 import { ChordPanel } from "./ChordPanel";
@@ -34,9 +34,27 @@ export function EditorScreen({ songId }: Props) {
 	const [showLyrics, setShowLyrics] = useState(false);
 	const [showExport, setShowExport] = useState(false);
 
+	const [playScope, setPlayScope] = useState<"song" | "section" | "bar">("song");
+	const [showScopePicker, setShowScopePicker] = useState(false);
+	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const didLongPress = useRef(false);
+	const playBarRef = useRef<HTMLDivElement>(null);
+
 	const playerStore = usePlayerStore();
 	const isPlaying = playerStore.state === "playing";
 	const isLoading = playerStore.isLoading;
+
+	// Dismiss scope picker on outside click
+	useEffect(() => {
+		if (!showScopePicker) return;
+		const handler = (e: PointerEvent) => {
+			if (playBarRef.current && !playBarRef.current.contains(e.target as Node)) {
+				setShowScopePicker(false);
+			}
+		};
+		document.addEventListener("pointerdown", handler);
+		return () => document.removeEventListener("pointerdown", handler);
+	}, [showScopePicker]);
 
 	const handleCycleInstrument = useCallback(async () => {
 		if (!song) return;
@@ -81,7 +99,7 @@ export function EditorScreen({ songId }: Props) {
 			playerStore.stop();
 			return;
 		}
-		if (currentContext?.type === "bar") {
+		if (playScope === "bar" && currentContext?.type === "bar") {
 			const sec = song.sections.find((s) => s.id === currentContext.sectionId);
 			const part = sec?.parts.find((p) => p.id === currentContext.partId);
 			const bar = part?.bars.find((b) => b.id === currentContext.barId);
@@ -94,7 +112,7 @@ export function EditorScreen({ songId }: Props) {
 				});
 				return;
 			}
-		} else if (currentContext?.type === "section") {
+		} else if (playScope === "section" && currentContext) {
 			const sec = song.sections.find((s) => s.id === currentContext.sectionId);
 			if (sec) {
 				await playerStore.play({ ...song, sections: [sec] });
@@ -102,7 +120,28 @@ export function EditorScreen({ songId }: Props) {
 			}
 		}
 		await playerStore.play(song);
-	}, [song, isPlaying, currentContext, playerStore]);
+	}, [song, isPlaying, currentContext, playScope, playerStore]);
+
+	const handlePlayPointerDown = useCallback(() => {
+		if (isPlaying || isLoading) return;
+		didLongPress.current = false;
+		longPressTimer.current = setTimeout(() => {
+			didLongPress.current = true;
+			setShowScopePicker(true);
+		}, 500);
+	}, [isPlaying, isLoading]);
+
+	const handlePlayPointerUp = useCallback(() => {
+		if (longPressTimer.current) {
+			clearTimeout(longPressTimer.current);
+			longPressTimer.current = null;
+		}
+	}, []);
+
+	const handlePlayClick = useCallback(async () => {
+		if (didLongPress.current) return;
+		await handlePlayStop();
+	}, [handlePlayStop]);
 
 	if (song === undefined)
 		return (
@@ -117,15 +156,22 @@ export function EditorScreen({ songId }: Props) {
 			</div>
 		);
 
+	const effectiveScope =
+		playScope === "bar" && currentContext?.type === "bar"
+			? "bar"
+			: playScope === "section" && currentContext
+				? "section"
+				: "song";
+
 	let playLabel = "▶ Play";
 	if (isLoading) playLabel = "Loading…";
 	else if (isPlaying) playLabel = "■ Stop";
-	else if (currentContext?.type === "bar") playLabel = "▶ Play bar";
-	else if (currentContext?.type === "section") {
+	else if (effectiveScope === "bar") playLabel = "▶ Play bar";
+	else if (effectiveScope === "section") {
 		const name = song.sections.find(
-			(s) => s.id === currentContext.sectionId,
+			(s) => s.id === currentContext?.sectionId,
 		)?.name;
-		if (name) playLabel = `▶ Play ${name}`;
+		playLabel = `▶ Play ${name ?? "section"}`;
 	}
 
 	return (
@@ -198,11 +244,56 @@ export function EditorScreen({ songId }: Props) {
 			/>
 
 			{/* Play bar */}
-			<div className="p-3 border-t border-border">
+			<div ref={playBarRef} className="relative p-3 border-t border-border">
+				{showScopePicker && (
+					<div className="absolute bottom-full left-3 right-3 mb-1 flex gap-2 bg-popover border border-border rounded-lg p-2 shadow-lg">
+						<Button
+							variant={playScope === "bar" ? "default" : "secondary"}
+							size="sm"
+							className="flex-1"
+							disabled={currentContext?.type !== "bar"}
+							onPointerDown={(e) => e.stopPropagation()}
+							onClick={() => {
+								setPlayScope("bar");
+								setShowScopePicker(false);
+							}}
+						>
+							Bar
+						</Button>
+						<Button
+							variant={playScope === "section" ? "default" : "secondary"}
+							size="sm"
+							className="flex-1"
+							disabled={!currentContext}
+							onPointerDown={(e) => e.stopPropagation()}
+							onClick={() => {
+								setPlayScope("section");
+								setShowScopePicker(false);
+							}}
+						>
+							Section
+						</Button>
+						<Button
+							variant={playScope === "song" ? "default" : "secondary"}
+							size="sm"
+							className="flex-1"
+							onPointerDown={(e) => e.stopPropagation()}
+							onClick={() => {
+								setPlayScope("song");
+								setShowScopePicker(false);
+							}}
+						>
+							Song
+						</Button>
+					</div>
+				)}
 				<Button
 					className="w-full h-12 text-base font-semibold"
 					variant={isPlaying ? "secondary" : "default"}
-					onClick={handlePlayStop}
+					onClick={handlePlayClick}
+					onPointerDown={handlePlayPointerDown}
+					onPointerUp={handlePlayPointerUp}
+					onPointerCancel={handlePlayPointerUp}
 					disabled={isLoading}
 				>
 					{playLabel}
