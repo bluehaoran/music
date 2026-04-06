@@ -55,7 +55,7 @@ export function GuitarDiagram({ voicing, label }: Props) {
 		barreFret - startFret < FRETS;
 
 	return (
-		<div className="guitar-diagram">
+		<div className="flex flex-col items-center gap-1">
 			<svg
 				viewBox={`0 0 ${W} ${H}`}
 				width={W}
@@ -180,7 +180,7 @@ export function GuitarDiagram({ voicing, label }: Props) {
 					);
 				})}
 			</svg>
-			{label && <div className="guitar-diagram-label">{label}</div>}
+			{label && <div className="text-xs text-muted-foreground">{label}</div>}
 		</div>
 	);
 }

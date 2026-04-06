@@ -1,16 +1,18 @@
-/**
- * SongSettingsSheet.tsx
- * Bottom sheet for song-level settings: instrument, capo, BPM, time sig, drums.
- * Changes are batched and applied on "Done".
- */
-
 import { useState } from "react";
 import type { Song, TimeSignature } from "../../theory/model";
 import { updateSong } from "../../data/songRepo";
 import { patternsForTimeSig } from "../../audio/drums";
+import { Button } from "@/components/ui/button";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Props {
 	song: Song;
+	open: boolean;
 	onClose: () => void;
 	onExport: () => void;
 }
@@ -30,17 +32,15 @@ function tsEqual(a: TimeSignature, b: TimeSignature) {
 	return a.numerator === b.numerator && a.denominator === b.denominator;
 }
 
-export function SongSettingsSheet({ song, onClose, onExport }: Props) {
+export function SongSettingsSheet({ song, open, onClose, onExport }: Props) {
 	const [instrument, setInstrument] = useState(song.instrument);
 	const [capo, setCapo] = useState(song.capo);
 	const [bpm, setBpm] = useState(song.bpm);
 	const [timeSig, setTimeSig] = useState<TimeSignature>(song.timeSignature);
 	const [drumPatternId, setDrumPatternId] = useState(song.drumPatternId);
 
-	// Recalculate drum options when time sig changes
 	const drumPatterns = patternsForTimeSig(timeSig);
 
-	// If current drum selection is incompatible with new time sig, clear it
 	function handleTimeSig(ts: TimeSignature) {
 		setTimeSig(ts);
 		const compatible = patternsForTimeSig(ts);
@@ -61,98 +61,110 @@ export function SongSettingsSheet({ song, onClose, onExport }: Props) {
 	}
 
 	return (
-		<div className="settings-overlay" onPointerDown={onClose}>
-			<div
-				className="settings-sheet"
-				onPointerDown={(e) => e.stopPropagation()}
+		<Sheet
+			open={open}
+			onOpenChange={(o) => {
+				if (!o) onClose();
+			}}
+		>
+			<SheetContent
+				side="bottom"
+				className="max-h-[85dvh] overflow-y-auto flex flex-col gap-4"
 			>
-				{/* Header */}
-				<div className="settings-header">
-					<span className="settings-title">Song Settings</span>
-					<button
-						className="settings-close"
-						onClick={onClose}
-						aria-label="Close"
-					>
-						×
-					</button>
-				</div>
+				<SheetHeader>
+					<SheetTitle>Song Settings</SheetTitle>
+				</SheetHeader>
 
 				{/* Instrument */}
-				<div className="settings-row">
-					<span className="settings-label">Instrument</span>
-					<div className="settings-segmented">
-						<button
-							className={`settings-seg-btn${instrument === "guitar" ? " settings-seg-btn--active" : ""}`}
-							onClick={() => setInstrument("guitar")}
-						>
-							Guitar
-						</button>
-						<button
-							className={`settings-seg-btn${instrument === "piano" ? " settings-seg-btn--active" : ""}`}
-							onClick={() => setInstrument("piano")}
-						>
-							Piano
-						</button>
+				<div className="flex items-center justify-between">
+					<span className="text-sm font-medium">Instrument</span>
+					<div className="flex rounded-lg border border-border overflow-hidden">
+						{(["guitar", "piano"] as const).map((inst) => (
+							<button
+								key={inst}
+								className={[
+									"px-4 py-1.5 text-sm capitalize",
+									instrument === inst
+										? "bg-primary text-primary-foreground"
+										: "bg-muted/40 text-foreground",
+								].join(" ")}
+								onClick={() => setInstrument(inst)}
+							>
+								{inst}
+							</button>
+						))}
 					</div>
 				</div>
 
-				{/* Capo — guitar only */}
+				{/* Capo */}
 				{instrument === "guitar" && (
-					<div className="settings-row">
-						<span className="settings-label">Capo</span>
-						<div className="settings-stepper">
-							<button
-								className="settings-step-btn"
+					<div className="flex items-center justify-between">
+						<span className="text-sm font-medium">Capo</span>
+						<div className="flex items-center gap-3">
+							<Button
+								variant="outline"
+								size="icon"
+								className="size-8"
 								onClick={() => setCapo((c) => Math.max(0, c - 1))}
 								disabled={capo === 0}
 							>
 								−
-							</button>
-							<span className="settings-step-val">
+							</Button>
+							<span className="text-sm w-16 text-center">
 								{capo === 0 ? "None" : `Fret ${capo}`}
 							</span>
-							<button
-								className="settings-step-btn"
+							<Button
+								variant="outline"
+								size="icon"
+								className="size-8"
 								onClick={() => setCapo((c) => Math.min(7, c + 1))}
 								disabled={capo === 7}
 							>
 								+
-							</button>
+							</Button>
 						</div>
 					</div>
 				)}
 
 				{/* BPM */}
-				<div className="settings-row">
-					<span className="settings-label">Tempo</span>
-					<div className="settings-stepper">
-						<button
-							className="settings-step-btn"
+				<div className="flex items-center justify-between">
+					<span className="text-sm font-medium">Tempo</span>
+					<div className="flex items-center gap-3">
+						<Button
+							variant="outline"
+							size="icon"
+							className="size-8"
 							onClick={() => setBpm((b) => Math.max(40, b - 5))}
 							disabled={bpm <= 40}
 						>
 							−
-						</button>
-						<span className="settings-step-val">{bpm} BPM</span>
-						<button
-							className="settings-step-btn"
+						</Button>
+						<span className="text-sm w-16 text-center">{bpm} BPM</span>
+						<Button
+							variant="outline"
+							size="icon"
+							className="size-8"
 							onClick={() => setBpm((b) => Math.min(240, b + 5))}
 							disabled={bpm >= 240}
 						>
 							+
-						</button>
+						</Button>
 					</div>
 				</div>
 
 				{/* Time signature */}
-				<div className="settings-row">
-					<span className="settings-label">Time</span>
-					<div className="settings-chip-row">
+				<div className="flex items-center justify-between gap-2">
+					<span className="text-sm font-medium">Time</span>
+					<div className="flex gap-1.5 flex-wrap justify-end">
 						{TIME_SIGS.map((ts) => (
 							<button
 								key={tsLabel(ts)}
-								className={`settings-chip${tsEqual(ts, timeSig) ? " settings-chip--active" : ""}`}
+								className={[
+									"px-3 py-1 rounded-lg border text-sm",
+									tsEqual(ts, timeSig)
+										? "border-primary bg-primary text-primary-foreground"
+										: "border-border bg-muted/40 text-foreground",
+								].join(" ")}
 								onClick={() => handleTimeSig(ts)}
 							>
 								{tsLabel(ts)}
@@ -161,12 +173,17 @@ export function SongSettingsSheet({ song, onClose, onExport }: Props) {
 					</div>
 				</div>
 
-				{/* Drum pattern */}
-				<div className="settings-row settings-row--wrap">
-					<span className="settings-label">Drums</span>
-					<div className="settings-chip-row">
+				{/* Drums */}
+				<div className="flex flex-col gap-2">
+					<span className="text-sm font-medium">Drums</span>
+					<div className="flex gap-1.5 flex-wrap">
 						<button
-							className={`settings-chip${drumPatternId === null ? " settings-chip--active" : ""}`}
+							className={[
+								"px-3 py-1 rounded-lg border text-sm",
+								drumPatternId === null
+									? "border-primary bg-primary text-primary-foreground"
+									: "border-border bg-muted/40 text-foreground",
+							].join(" ")}
 							onClick={() => setDrumPatternId(null)}
 						>
 							Off
@@ -174,7 +191,12 @@ export function SongSettingsSheet({ song, onClose, onExport }: Props) {
 						{drumPatterns.map((p) => (
 							<button
 								key={p.id}
-								className={`settings-chip${drumPatternId === p.id ? " settings-chip--active" : ""}`}
+								className={[
+									"px-3 py-1 rounded-lg border text-sm",
+									drumPatternId === p.id
+										? "border-primary bg-primary text-primary-foreground"
+										: "border-border bg-muted/40 text-foreground",
+								].join(" ")}
 								onClick={() => setDrumPatternId(p.id)}
 							>
 								{p.name}
@@ -183,14 +205,12 @@ export function SongSettingsSheet({ song, onClose, onExport }: Props) {
 					</div>
 				</div>
 
-				<button className="settings-export-btn" onClick={onExport}>
+				<Button variant="outline" onClick={onExport}>
 					Export ChordPro
-				</button>
+				</Button>
 
-				<button className="settings-done-btn" onClick={handleDone}>
-					Done
-				</button>
-			</div>
-		</div>
+				<Button onClick={handleDone}>Done</Button>
+			</SheetContent>
+		</Sheet>
 	);
 }

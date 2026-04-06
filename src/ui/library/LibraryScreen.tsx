@@ -4,6 +4,7 @@ import { db } from "../../data/db";
 import { addSong, deleteSong, updateSong } from "../../data/songRepo";
 import { useNavStore } from "../../app/nav";
 import type { ChordProImport } from "../../data/chordpro";
+import { Button } from "@/components/ui/button";
 import { ImportSheet } from "./ImportSheet";
 
 export function LibraryScreen() {
@@ -55,22 +56,26 @@ export function LibraryScreen() {
 	}
 
 	if (songs === undefined) {
-		return <div className="editor-loading">Loading…</div>;
+		return (
+			<div className="flex items-center justify-center h-full text-muted-foreground">
+				Loading…
+			</div>
+		);
 	}
 
 	return (
 		<>
 			{songs.length === 0 ? (
-				<div className="library-empty">
-					<span>No songs yet</span>
-					<span className="library-empty-hint">Tap + to start</span>
+				<div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
+					<span className="text-base">No songs yet</span>
+					<span className="text-sm">Tap + to start</span>
 				</div>
 			) : (
-				<ul className="song-list">
+				<ul className="divide-y divide-border">
 					{songs.map((song) => (
 						<li
 							key={song.id}
-							className="song-row"
+							className="flex flex-col px-4 py-3 cursor-pointer select-none active:bg-muted"
 							onClick={() => {
 								if (!didLongPress.current) goToEditor(song.id);
 							}}
@@ -81,31 +86,40 @@ export function LibraryScreen() {
 							onTouchEnd={cancelLongPress}
 							onTouchCancel={cancelLongPress}
 						>
-							<span className="song-row-title">{song.title}</span>
-							<span className="song-row-meta">
+							<span className="text-base font-medium text-foreground">
+								{song.title}
+							</span>
+							<span className="text-sm text-muted-foreground">
 								{song.key} {song.mode} · {song.bpm} BPM
 							</span>
 						</li>
 					))}
 				</ul>
 			)}
-			<button className="fab" onClick={handleNew} aria-label="New song">
+
+			{/* FAB */}
+			<Button
+				className="fixed bottom-6 right-6 size-14 rounded-full shadow-lg text-2xl"
+				onClick={handleNew}
+				aria-label="New song"
+			>
 				+
-			</button>
-			<button
-				className="library-import-btn"
+			</Button>
+
+			<Button
+				variant="outline"
+				className="fixed bottom-6 right-24"
 				onClick={() => setShowImport(true)}
 				aria-label="Import ChordPro"
 			>
 				Import
-			</button>
+			</Button>
 
-			{showImport && (
-				<ImportSheet
-					onImport={handleImport}
-					onClose={() => setShowImport(false)}
-				/>
-			)}
+			<ImportSheet
+				open={showImport}
+				onImport={handleImport}
+				onClose={() => setShowImport(false)}
+			/>
 		</>
 	);
 }

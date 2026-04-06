@@ -1,18 +1,22 @@
-/**
- * ImportSheet.tsx
- * Bottom sheet for importing a song from a ChordPro file or pasted text.
- */
-
 import { useRef, useState } from "react";
 import type { ChordProImport } from "../../data/chordpro";
 import { importChordPro } from "../../data/chordpro";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Props {
+	open: boolean;
 	onImport: (data: ChordProImport) => Promise<void>;
 	onClose: () => void;
 }
 
-export function ImportSheet({ onImport, onClose }: Props) {
+export function ImportSheet({ open, onImport, onClose }: Props) {
 	const [text, setText] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -30,7 +34,6 @@ export function ImportSheet({ onImport, onClose }: Props) {
 			}
 		};
 		reader.readAsText(file);
-		// Reset so the same file can be selected again
 		e.target.value = "";
 	}
 
@@ -41,28 +44,34 @@ export function ImportSheet({ onImport, onClose }: Props) {
 		try {
 			const data = importChordPro(text);
 			await onImport(data);
-		} catch (err) {
+		} catch {
 			setError("Could not parse — check the ChordPro format and try again.");
 			setLoading(false);
 		}
 	}
 
 	return (
-		<div className="import-overlay" onPointerDown={onClose}>
-			<div className="import-sheet" onPointerDown={(e) => e.stopPropagation()}>
-				<div className="import-header">
-					<span className="import-title">Import ChordPro</span>
-					<button className="import-close" onClick={onClose} aria-label="Close">
-						×
-					</button>
-				</div>
-				<p className="import-hint">
+		<Sheet
+			open={open}
+			onOpenChange={(o) => {
+				if (!o) onClose();
+			}}
+		>
+			<SheetContent
+				side="bottom"
+				className="max-h-[85dvh] overflow-y-auto flex flex-col gap-4"
+			>
+				<SheetHeader>
+					<SheetTitle>Import ChordPro</SheetTitle>
+				</SheetHeader>
+
+				<p className="text-sm text-muted-foreground">
 					Paste ChordPro text, or open a{" "}
-					<span className="import-code">.cho</span> file.
+					<code className="text-xs bg-muted px-1 py-0.5 rounded">.cho</code>{" "}
+					file.
 				</p>
 
-				<textarea
-					className="import-textarea"
+				<Textarea
 					value={text}
 					onChange={(e) => {
 						setText(e.target.value);
@@ -73,35 +82,36 @@ export function ImportSheet({ onImport, onClose }: Props) {
 					}
 					rows={8}
 					spellCheck={false}
+					className="font-mono text-sm resize-none"
 				/>
 
-				{error && <p className="import-error">{error}</p>}
+				{error && <p className="text-sm text-destructive">{error}</p>}
 
 				<input
 					ref={fileRef}
 					type="file"
 					accept=".cho,.chopro,.txt"
-					style={{ display: "none" }}
+					className="hidden"
 					onChange={handleFile}
 				/>
 
-				<div className="import-actions">
-					<button
-						className="import-btn import-btn--secondary"
+				<div className="flex gap-2">
+					<Button
+						variant="outline"
 						onClick={() => fileRef.current?.click()}
 						disabled={loading}
 					>
 						Open File
-					</button>
-					<button
-						className="import-btn import-btn--primary"
+					</Button>
+					<Button
+						className="flex-1"
 						onClick={handleImport}
 						disabled={!text.trim() || loading}
 					>
 						{loading ? "Importing…" : "Import"}
-					</button>
+					</Button>
 				</div>
-			</div>
-		</div>
+			</SheetContent>
+		</Sheet>
 	);
 }

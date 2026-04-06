@@ -1,15 +1,6 @@
 /**
  * ChordPanel.tsx
  * Nashville-number chord input UI.
- *
- * Layout (mobile-first):
- *   [Key / Mode picker row]
- *   [7 diatonic chord buttons — 4 top row, 3 bottom row]
- *   [Context strip — shows current bar's chords or section name]
- *
- * Long-press a chord button → quality-variant popover (adds that variant).
- * Long-press a chip in the context strip → quality-variant popover (replaces that slot).
- * Tapping a button appends a chord to the current bar or creates a new bar.
  */
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
@@ -31,9 +22,10 @@ import {
 } from "../../data/songRepo";
 import { createBar, createPart, createSection } from "../../theory/songFactory";
 import { usePlayerStore } from "../../audio/playerStore";
+import { Button } from "@/components/ui/button";
 import type { CurrentContext } from "./types";
 
-// ─── Key picker data ────────────────────────────────────────────────────────
+// ─── Key picker data ──────────────────────────────────────────────────────────
 
 const ALL_KEYS: NoteName[] = [
 	"C",
@@ -50,11 +42,9 @@ const ALL_KEYS: NoteName[] = [
 	"B",
 ];
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 type GridButton = ReturnType<typeof buildDiatonicGrid>[number];
 
-// ─── Long-press hook ─────────────────────────────────────────────────────────
+// ─── Long-press hook ──────────────────────────────────────────────────────────
 
 const LONG_PRESS_MS = 450;
 
@@ -129,51 +119,56 @@ function VariantPopover({
 			: null;
 
 	return (
-		<div className="variant-overlay" onPointerDown={onClose}>
+		<div
+			className="fixed inset-0 z-50 bg-black/60 flex items-end"
+			onPointerDown={onClose}
+		>
 			<div
-				className="variant-popover"
+				className="w-full bg-popover border-t border-border rounded-t-2xl p-4 flex flex-col gap-3"
 				onPointerDown={(e) => e.stopPropagation()}
 			>
-				<div className="variant-popover-title">
-					<span className="variant-popover-numeral">{target.numeralLabel}</span>
-					<span className="variant-popover-root"> — {target.chord.root}</span>
-					<button
-						className="variant-play-btn"
+				{/* Title */}
+				<div className="flex items-center gap-2">
+					<span className="text-base font-semibold text-foreground">
+						{target.numeralLabel}
+					</span>
+					<span className="text-sm text-muted-foreground">
+						— {target.chord.root}
+					</span>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="ml-auto size-8"
 						onClick={() => onPlayChord(previewChord)}
 						aria-label="Play chord"
 					>
 						▶
-					</button>
+					</Button>
 				</div>
 
 				{voicing && (
-					<div className="variant-diagram-row">
+					<div className="flex justify-center">
 						<GuitarDiagram voicing={voicing} label={chordLabel(previewChord)} />
 					</div>
 				)}
 
-				<div className="variant-grid">
+				<div className="grid grid-cols-3 gap-2">
 					{variants.map((v) => (
 						<button
 							key={v.quality}
 							className={[
-								"variant-btn",
-								v.quality === target.chord.quality
-									? "variant-btn--natural"
-									: "",
+								"flex flex-col items-start px-3 py-2 rounded-lg border text-left",
 								v.quality === previewChord.quality
-									? "variant-btn--previewed"
-									: "",
-							]
-								.filter(Boolean)
-								.join(" ")}
+									? "border-primary bg-primary/15 text-primary"
+									: "border-border bg-muted/50 text-foreground",
+							].join(" ")}
 							onPointerEnter={() => setPreviewChord(v.chord)}
 							onPointerDown={() => setPreviewChord(v.chord)}
 							onClick={() => onSelect(v.chord)}
 						>
-							<span className="variant-btn-name">{v.label}</span>
+							<span className="text-sm font-medium">{v.label}</span>
 							{v.quality === target.chord.quality && (
-								<span className="variant-btn-tag">natural</span>
+								<span className="text-xs text-muted-foreground">natural</span>
 							)}
 						</button>
 					))}
@@ -197,32 +192,45 @@ function KeyPicker({
 	onClose: () => void;
 }) {
 	return (
-		<div className="key-picker-overlay" onPointerDown={onClose}>
-			<div className="key-picker" onPointerDown={(e) => e.stopPropagation()}>
-				<div className="key-picker-grid">
+		<div
+			className="fixed inset-0 z-50 bg-black/60 flex items-end"
+			onPointerDown={onClose}
+		>
+			<div
+				className="w-full bg-popover border-t border-border rounded-t-2xl p-4 flex flex-col gap-3"
+				onPointerDown={(e) => e.stopPropagation()}
+			>
+				<div className="grid grid-cols-6 gap-2">
 					{ALL_KEYS.map((k) => (
 						<button
 							key={k}
-							className={`key-picker-key${k === currentKey ? " key-picker-key--active" : ""}`}
+							className={[
+								"py-2 rounded-lg border text-sm font-medium",
+								k === currentKey
+									? "border-primary bg-primary text-primary-foreground"
+									: "border-border bg-muted/50 text-foreground",
+							].join(" ")}
 							onClick={() => onChange(k, currentMode)}
 						>
 							{k}
 						</button>
 					))}
 				</div>
-				<div className="key-picker-modes">
-					<button
-						className={`key-picker-mode${currentMode === "major" ? " key-picker-mode--active" : ""}`}
-						onClick={() => onChange(currentKey, "major")}
-					>
-						major
-					</button>
-					<button
-						className={`key-picker-mode${currentMode === "minor" ? " key-picker-mode--active" : ""}`}
-						onClick={() => onChange(currentKey, "minor")}
-					>
-						minor
-					</button>
+				<div className="flex gap-2">
+					{(["major", "minor"] as ScaleMode[]).map((m) => (
+						<button
+							key={m}
+							className={[
+								"flex-1 py-2 rounded-lg border text-sm font-medium",
+								m === currentMode
+									? "border-primary bg-primary text-primary-foreground"
+									: "border-border bg-muted/50 text-foreground",
+							].join(" ")}
+							onClick={() => onChange(currentKey, m)}
+						>
+							{m}
+						</button>
+					))}
 				</div>
 			</div>
 		</div>
@@ -238,8 +246,6 @@ interface Props {
 }
 
 export function ChordPanel({ song, currentContext, onContextChange }: Props) {
-	// popoverTarget: from grid button long-press (editingSlotIndex = null)
-	// or from chip long-press (editingSlotIndex = slot index to replace)
 	const [popoverTarget, setPopoverTarget] = useState<GridButton | null>(null);
 	const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
 	const [popoverInitialChord, setPopoverInitialChord] = useState<
@@ -248,7 +254,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 	const [showKeyPicker, setShowKeyPicker] = useState(false);
 	const [minimized, setMinimized] = useState(true);
 
-	// Auto-expand when a section or bar is selected
 	useEffect(() => {
 		if (currentContext !== null) setMinimized(false);
 	}, [currentContext]);
@@ -256,7 +261,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 	const playerStore = usePlayerStore();
 	const grid = buildDiatonicGrid(song.key, song.mode);
 
-	// Resolve the current bar from song data (live)
 	const currentBar = useMemo(() => {
 		if (currentContext?.type !== "bar") return null;
 		const sec = song.sections.find((s) => s.id === currentContext.sectionId);
@@ -270,8 +274,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 			song.sections.find((s) => s.id === currentContext.sectionId)?.name ?? null
 		);
 	}, [song, currentContext]);
-
-	// ── Chord input ────────────────────────────────────────────────────────
 
 	const handleChordInput = useCallback(
 		async (chord: Chord) => {
@@ -292,7 +294,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 				const lastPart = sec.parts[sec.parts.length - 1];
 				await addBars(song.id, sec.id, lastPart.id, [bar]);
 			} else {
-				// No context: create a default section with the chord
 				const bar = createBar([chord], song.timeSignature);
 				if (song.sections.length === 0) {
 					const part = createPart([bar]);
@@ -310,8 +311,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		[currentContext, song, onContextChange],
 	);
 
-	// ── Grid long-press ────────────────────────────────────────────────────
-
 	const openGridPopover = useCallback((btn: GridButton) => {
 		setEditingSlotIndex(null);
 		setPopoverInitialChord(undefined);
@@ -323,8 +322,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		openGridPopover,
 	);
 
-	// ── Chip long-press (existing bar slot) ───────────────────────────────
-
 	const chipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const chipDidLong = useRef(false);
 
@@ -335,9 +332,8 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 			if (currentContext?.type !== "bar") return;
 			const slot = currentBar?.slots[slotIndex];
 			if (!slot) return;
-			// Find grid button for this root
 			const btn = grid.find((b) => b.chord.root === slot.chord.root);
-			if (!btn) return; // out-of-key chord — skip
+			if (!btn) return;
 			setEditingSlotIndex(slotIndex);
 			setPopoverInitialChord(slot.chord);
 			setPopoverTarget(btn);
@@ -351,8 +347,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		}
 		chipDidLong.current = false;
 	}
-
-	// ── Variant popover select ─────────────────────────────────────────────
 
 	const handleVariantSelect = useCallback(
 		async (chord: Chord) => {
@@ -375,8 +369,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		[editingSlotIndex, currentContext, song, handleChordInput],
 	);
 
-	// ── Single-chord preview ───────────────────────────────────────────────
-
 	const handlePlayChord = useCallback(
 		async (chord: Chord) => {
 			const tpb = ticksPerBar(song.timeSignature);
@@ -395,8 +387,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		[song, playerStore],
 	);
 
-	// ── Key change ─────────────────────────────────────────────────────────
-
 	const handleKeyChange = useCallback(
 		async (key: NoteName, mode: ScaleMode) => {
 			setShowKeyPicker(false);
@@ -404,8 +394,6 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		},
 		[song.id],
 	);
-
-	// ── Delete bar ─────────────────────────────────────────────────────────
 
 	const handleDeleteBar = useCallback(async () => {
 		if (currentContext?.type !== "bar") return;
@@ -419,23 +407,20 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		onContextChange({ type: "section", sectionId: currentContext.sectionId });
 	}, [currentContext, song, onContextChange]);
 
-	// ─────────────────────────────────────────────────────────────────────
-
 	return (
-		<div className={`chord-panel${minimized ? " chord-panel--minimized" : ""}`}>
-
+		<div className="border-t border-border bg-card flex flex-col">
 			{/* Context strip */}
-			<div className="chord-context-strip">
+			<div className="flex items-center gap-2 px-3 py-2 border-b border-border min-h-[44px]">
 				{currentContext?.type === "bar" && currentBar ? (
 					<>
-						<div className="chord-context-chips">
+						<div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
 							{currentBar.slots.length === 0 ? (
-								<span className="chord-context-hint">empty bar</span>
+								<span className="text-xs text-muted-foreground">empty bar</span>
 							) : (
 								currentBar.slots.map((slot, i) => (
 									<button
 										key={i}
-										className="chord-context-chip"
+										className="px-2.5 py-1 rounded-md bg-muted text-sm font-medium text-foreground border border-border select-none"
 										onPointerDown={() => onChipDown(i)}
 										onPointerUp={onChipUp}
 										onPointerCancel={onChipUp}
@@ -447,68 +432,94 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 								))
 							)}
 						</div>
-						<button
-							className="chord-context-delete"
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-8 text-muted-foreground hover:text-destructive shrink-0"
 							onClick={handleDeleteBar}
 							aria-label="Delete bar"
 						>
 							🗑
-						</button>
+						</Button>
 					</>
 				) : currentContext?.type === "section" && currentSectionName ? (
-					<span className="chord-context-section">→ {currentSectionName}</span>
+					<span className="text-sm text-muted-foreground flex-1">
+						→ {currentSectionName}
+					</span>
 				) : (
-					<span className="chord-context-hint">
+					<span className="text-xs text-muted-foreground flex-1">
 						tap a section or bar to focus
 					</span>
 				)}
-				
-				<button
-					className="chord-minimize-btn"
+
+				<Button
+					variant="ghost"
+					size="icon"
+					className="size-8 shrink-0"
 					onClick={() => setMinimized((v) => !v)}
 					aria-label={minimized ? "Expand chord panel" : "Minimize chord panel"}
 				>
-					{minimized ? "+" : "-"}
-				</button>
+					{minimized ? "+" : "−"}
+				</Button>
 			</div>
 
 			{!minimized && (
-			<>
-			
-			{/* Key row */}
-			<div className="chord-key-row">
-				<button
-					className="chord-key-btn"
-					onClick={() => setShowKeyPicker((v) => !v)}
-					aria-expanded={showKeyPicker}
-				>
-					<span className="chord-key-root">{song.key}</span>
-					<span className="chord-key-mode">{song.mode}</span>
-					<span className="chord-key-caret" aria-hidden>
-						▾
-					</span>
-				</button>
-			</div>
+				<>
+					{/* Key row */}
+					<div className="px-3 pt-2">
+						<button
+							className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted/50 text-sm"
+							onClick={() => setShowKeyPicker((v) => !v)}
+							aria-expanded={showKeyPicker}
+						>
+							<span className="font-semibold text-foreground">{song.key}</span>
+							<span className="text-muted-foreground">{song.mode}</span>
+							<span className="text-muted-foreground text-xs" aria-hidden>
+								▾
+							</span>
+						</button>
+					</div>
 
-
-			{/* Nashville chord grid — 4 top, 3 bottom */}
-			<div className="chord-grid">
-				{grid.map((btn) => (
-					<button
-						key={btn.numeral}
-						className="chord-btn"
-						onPointerDown={() => onDown(btn)}
-						onPointerUp={() => onUp(btn)}
-						onPointerCancel={onCancel}
-						onContextMenu={(e) => e.preventDefault()}
-					>
-						<span className="chord-btn-numeral">{btn.numeralLabel}</span>
-						<span className="chord-btn-name">{btn.chordName}</span>
-					</button>
-				))}
-			</div>
-
-			</>
+					{/* Chord grid — 4 top, 3 bottom */}
+					<div className="grid grid-cols-4 gap-2 p-3">
+						{grid.slice(0, 4).map((btn) => (
+							<button
+								key={btn.numeral}
+								className="flex flex-col items-center justify-center py-3 rounded-xl border border-border bg-muted/40 active:bg-primary/20 select-none touch-none"
+								onPointerDown={() => onDown(btn)}
+								onPointerUp={() => onUp(btn)}
+								onPointerCancel={onCancel}
+								onContextMenu={(e) => e.preventDefault()}
+							>
+								<span className="text-base font-bold text-foreground leading-tight">
+									{btn.numeralLabel}
+								</span>
+								<span className="text-xs text-muted-foreground leading-tight">
+									{btn.chordName}
+								</span>
+							</button>
+						))}
+					</div>
+					<div className="grid grid-cols-3 gap-2 px-3 pb-3">
+						{grid.slice(4).map((btn) => (
+							<button
+								key={btn.numeral}
+								className="flex flex-col items-center justify-center py-3 rounded-xl border border-border bg-muted/40 active:bg-primary/20 select-none touch-none"
+								onPointerDown={() => onDown(btn)}
+								onPointerUp={() => onUp(btn)}
+								onPointerCancel={onCancel}
+								onContextMenu={(e) => e.preventDefault()}
+							>
+								<span className="text-base font-bold text-foreground leading-tight">
+									{btn.numeralLabel}
+								</span>
+								<span className="text-xs text-muted-foreground leading-tight">
+									{btn.chordName}
+								</span>
+							</button>
+						))}
+					</div>
+				</>
 			)}
 
 			{/* Overlays */}

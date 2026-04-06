@@ -7,9 +7,9 @@ export function AppShell() {
 	const screen = useNavStore((s) => s.screen);
 
 	return (
-		<div className="app-shell">
+		<div className="flex flex-col h-dvh overflow-hidden bg-background text-foreground">
 			<AppBar />
-			<main className="app-main">
+			<main className="flex-1 overflow-y-auto">
 				{screen.id === "library" && <LibraryScreen />}
 				{screen.id === "editor" && <EditorScreen songId={screen.songId} />}
 			</main>

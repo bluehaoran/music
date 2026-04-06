@@ -1,19 +1,22 @@
-/**
- * ExportSheet.tsx
- * Bottom sheet for exporting the current song as a ChordPro file.
- * Provides Copy, Download, and (if available) Share actions.
- */
-
 import { useState } from "react";
 import type { Song } from "../../theory/model";
 import { exportChordPro } from "../../data/chordpro";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Props {
 	song: Song;
+	open: boolean;
 	onClose: () => void;
 }
 
-export function ExportSheet({ song, onClose }: Props) {
+export function ExportSheet({ song, open, onClose }: Props) {
 	const text = exportChordPro(song);
 	const [copied, setCopied] = useState(false);
 
@@ -23,7 +26,7 @@ export function ExportSheet({ song, onClose }: Props) {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch {
-			// ignore — user can manually select
+			// ignore
 		}
 	}
 
@@ -48,47 +51,46 @@ export function ExportSheet({ song, onClose }: Props) {
 	const canShare = typeof navigator !== "undefined" && "share" in navigator;
 
 	return (
-		<div className="export-overlay" onPointerDown={onClose}>
-			<div className="export-sheet" onPointerDown={(e) => e.stopPropagation()}>
-				<div className="export-header">
-					<span className="export-title">Export ChordPro</span>
-					<button className="export-close" onClick={onClose} aria-label="Close">
-						×
-					</button>
-				</div>
-				<p className="export-filename">{song.title}.cho</p>
+		<Sheet
+			open={open}
+			onOpenChange={(o) => {
+				if (!o) onClose();
+			}}
+		>
+			<SheetContent
+				side="bottom"
+				className="max-h-[85dvh] overflow-y-auto flex flex-col gap-4"
+			>
+				<SheetHeader>
+					<SheetTitle>Export ChordPro</SheetTitle>
+				</SheetHeader>
 
-				<textarea
-					className="export-textarea"
+				<p className="text-sm text-muted-foreground font-mono">
+					{song.title}.cho
+				</p>
+
+				<Textarea
 					value={text}
 					readOnly
 					spellCheck={false}
 					rows={10}
+					className="font-mono text-sm resize-none"
 				/>
 
-				<div className="export-actions">
-					<button
-						className="export-btn export-btn--secondary"
-						onClick={handleDownload}
-					>
+				<div className="flex gap-2">
+					<Button variant="outline" onClick={handleDownload}>
 						Download
-					</button>
+					</Button>
 					{canShare && (
-						<button
-							className="export-btn export-btn--secondary"
-							onClick={handleShare}
-						>
+						<Button variant="outline" onClick={handleShare}>
 							Share
-						</button>
+						</Button>
 					)}
-					<button
-						className="export-btn export-btn--primary"
-						onClick={handleCopy}
-					>
+					<Button className="flex-1" onClick={handleCopy}>
 						{copied ? "Copied!" : "Copy"}
-					</button>
+					</Button>
 				</div>
-			</div>
-		</div>
+			</SheetContent>
+		</Sheet>
 	);
 }

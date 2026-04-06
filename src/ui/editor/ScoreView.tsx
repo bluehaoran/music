@@ -1,11 +1,6 @@
 /**
  * ScoreView.tsx
  * Arrangement display — shows the song's section/part/bar hierarchy.
- *
- * Clicking a section name selects it (and opens rename).
- * Clicking a bar selects it as the current editing context.
- * Each section header shows a repeat-count control (×, ×2, ×3, ×4).
- * The currently playing bar is highlighted via playerStore.
  */
 
 import { useMemo, useRef, useState } from "react";
@@ -18,9 +13,9 @@ import {
 	renameSection as renameSectionRepo,
 	updatePartRepeatCount,
 } from "../../data/songRepo";
+import { Button } from "@/components/ui/button";
 import type { CurrentContext } from "./types";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { RepeatControl } from "./RepeatControl";
 
 interface Props {
 	song: Song;
@@ -34,8 +29,6 @@ interface BarRef {
 	barId: string;
 	globalIndex: number;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildBarRefs(song: Song): BarRef[] {
 	const refs: BarRef[] = [];
@@ -66,57 +59,6 @@ const SECTION_NAMES = [
 	"Interlude",
 ];
 
-// ─── RepeatControl ────────────────────────────────────────────────────────────
-
-function RepeatControl({
-	count,
-	onChange,
-}: {
-	count: number;
-	onChange: (n: number) => void;
-}) {
-	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const didLongRef = useRef(false);
-
-	function onDown() {
-		didLongRef.current = false;
-		timerRef.current = setTimeout(() => {
-			didLongRef.current = true;
-			if (count > 1 && window.confirm("Remove repeat?")) onChange(1);
-		}, 500);
-	}
-
-	function onUp() {
-		if (timerRef.current) clearTimeout(timerRef.current);
-		if (!didLongRef.current) {
-			onChange(count >= 4 ? 1 : count + 1);
-		}
-	}
-
-	function onCancel() {
-		if (timerRef.current) clearTimeout(timerRef.current);
-		didLongRef.current = false;
-	}
-
-	return (
-		<button
-			className={[
-				"score-repeat-btn",
-				count > 1 ? "score-repeat-btn--active" : "",
-			]
-				.filter(Boolean)
-				.join(" ")}
-			onPointerDown={onDown}
-			onPointerUp={onUp}
-			onPointerCancel={onCancel}
-			onContextMenu={(e) => e.preventDefault()}
-			aria-label={`Repeat: ${count}`}
-		>
-			{count === 1 ? "🔂" : `×${count}`}
-		</button>
-	);
-}
-
 // ─── BarCell ──────────────────────────────────────────────────────────────────
 
 function BarCell({
@@ -138,18 +80,24 @@ function BarCell({
 	return (
 		<button
 			className={[
-				"score-bar-cell",
-				isPlaying ? "score-bar-cell--playing" : "",
-				isSelected ? "score-bar-cell--selected" : "",
-				bar.slots.length === 0 ? "score-bar-cell--empty" : "",
-				bar.lyric ? "score-bar-cell--has-lyric" : "",
+				"flex flex-col items-start px-2 py-1.5 rounded border text-left min-w-[56px] select-none",
+				isPlaying
+					? "border-primary bg-primary/20 text-primary"
+					: isSelected
+						? "border-primary/60 bg-primary/10"
+						: "border-border bg-card hover:bg-muted",
+				bar.slots.length === 0 ? "opacity-50" : "",
 			]
 				.filter(Boolean)
 				.join(" ")}
 			onClick={onClick}
 		>
-			<span className="score-bar-chord">{label}</span>
-			{bar.lyric && <span className="score-bar-lyric">{bar.lyric}</span>}
+			<span className="text-sm font-medium leading-tight">{label}</span>
+			{bar.lyric && (
+				<span className="text-xs text-muted-foreground leading-tight truncate max-w-full">
+					{bar.lyric}
+				</span>
+			)}
 		</button>
 	);
 }
@@ -223,35 +171,35 @@ export function ScoreView({ song, currentContext, onContextChange }: Props) {
 
 	if (song.sections.length === 0) {
 		return (
-			<div className="score-empty">
-				<p>Tap chords below to build your arrangement.</p>
-				<button className="score-add-section-btn" onClick={handleAddSection}>
+			<div className="flex flex-col items-center justify-center gap-3 py-10 text-muted-foreground">
+				<p className="text-sm">Tap chords below to build your arrangement.</p>
+				<Button variant="outline" size="sm" onClick={handleAddSection}>
 					+ Add section
-				</button>
+				</Button>
 			</div>
 		);
 	}
 
 	return (
-		<div className="score-view">
+		<div className="flex flex-col gap-2 p-3">
 			{song.sections.map((section) => {
 				const firstPart = section.parts[0];
 				return (
 					<div
 						key={section.id}
 						className={[
-							"score-section",
-							isSectionActive(section.id) ? "score-section--current" : "",
-						]
-							.filter(Boolean)
-							.join(" ")}
+							"rounded-lg border p-2 flex flex-col gap-2",
+							isSectionActive(section.id)
+								? "border-primary/50 bg-primary/5"
+								: "border-border bg-card",
+						].join(" ")}
 					>
 						{/* Section header */}
-						<div className="score-section-header">
+						<div className="flex items-center gap-2">
 							{editingSectionId === section.id ? (
 								<input
 									ref={nameInputRef}
-									className="score-section-name-input"
+									className="flex-1 bg-transparent text-sm font-semibold outline-none border-b border-primary"
 									value={nameDraft}
 									onChange={(e) => setNameDraft(e.target.value)}
 									onBlur={() => commitRename(section.id)}
@@ -262,7 +210,7 @@ export function ScoreView({ song, currentContext, onContextChange }: Props) {
 								/>
 							) : (
 								<span
-									className="score-section-name"
+									className="flex-1 text-sm font-semibold text-foreground cursor-pointer"
 									onClick={() => {
 										onContextChange({ type: "section", sectionId: section.id });
 										startRename(section.id, section.name);
@@ -272,50 +220,47 @@ export function ScoreView({ song, currentContext, onContextChange }: Props) {
 								</span>
 							)}
 
-							<button
-								className="score-section-delete"
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-6 text-muted-foreground hover:text-destructive"
 								onClick={() => handleDeleteSection(section.id)}
 								aria-label="Delete section"
 							>
 								×
-							</button>
+							</Button>
 						</div>
 
 						{/* Parts */}
 						{section.parts.map((part) => (
-							<div key={part.id} className="score-part">
-								<div className="score-bars-scroll">
-									<div className="score-bars">
-										{part.bars.length === 0 ? (
-											<span className="score-empty-part">
-												empty — tap chords below
-											</span>
-										) : (
-											part.bars.map((bar) => (
-												<BarCell
-													key={bar.id}
-													bar={bar}
-													isPlaying={isBarPlaying(section.id, part.id, bar.id)}
-													isSelected={isBarSelected(bar.id)}
-													onClick={() =>
-														onContextChange({
-															type: "bar",
-															sectionId: section.id,
-															partId: part.id,
-															barId: bar.id,
-														})
-													}
-												/>
-											))
-										)}
-									</div>
-								</div>
+							<div key={part.id} className="flex flex-wrap gap-1.5">
+								{part.bars.length === 0 ? (
+									<span className="text-xs text-muted-foreground italic">
+										empty — tap chords below
+									</span>
+								) : (
+									part.bars.map((bar) => (
+										<BarCell
+											key={bar.id}
+											bar={bar}
+											isPlaying={isBarPlaying(section.id, part.id, bar.id)}
+											isSelected={isBarSelected(bar.id)}
+											onClick={() =>
+												onContextChange({
+													type: "bar",
+													sectionId: section.id,
+													partId: part.id,
+													barId: bar.id,
+												})
+											}
+										/>
+									))
+								)}
 							</div>
 						))}
 
-						<div className="score-section-footer">
-
-							{/* Repeat count control (on first part) */}
+						{/* Section footer */}
+						<div className="flex justify-end gap-2">
 							{firstPart && (
 								<RepeatControl
 									count={firstPart.repeatCount}
@@ -324,15 +269,19 @@ export function ScoreView({ song, currentContext, onContextChange }: Props) {
 									}
 								/>
 							)}
-
 						</div>
 					</div>
 				);
 			})}
 
-			<button className="score-add-section-btn" onClick={handleAddSection}>
+			<Button
+				variant="outline"
+				size="sm"
+				className="self-start"
+				onClick={handleAddSection}
+			>
 				+ Add section
-			</button>
+			</Button>
 		</div>
 	);
 }

@@ -1,13 +1,3 @@
-/**
- * BarEditSheet.tsx
- * Bottom sheet for editing a bar's chords.
- *
- * - Shows current chords as removable chips (tap to remove)
- * - 7-button chord grid to add chords (diatonic to song key)
- * - Save: rebuilds bar with new chords using even-split slots
- * - Delete: removes the bar entirely
- */
-
 import { useState } from "react";
 import { chordLabel } from "../../theory/chords";
 import type { Chord } from "../../theory/chords";
@@ -15,6 +5,14 @@ import type { Bar, Song } from "../../theory/model";
 import { buildDiatonicGrid } from "../../theory/nashville";
 import { createBar } from "../../theory/songFactory";
 import { replaceBar, removeBar } from "../../data/songRepo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Props {
 	bar: Bar;
@@ -58,58 +56,59 @@ export function BarEditSheet({ bar, song, sectionId, partId, onClose }: Props) {
 	}
 
 	return (
-		<div className="bar-edit-overlay" onPointerDown={onClose}>
-			<div
-				className="bar-edit-sheet"
-				onPointerDown={(e) => e.stopPropagation()}
+		<Sheet
+			open={true}
+			onOpenChange={(o) => {
+				if (!o) onClose();
+			}}
+		>
+			<SheetContent
+				side="bottom"
+				className="max-h-[85dvh] overflow-y-auto flex flex-col gap-4"
 			>
-				{/* Header */}
-				<div className="bar-edit-header">
-					<span className="bar-edit-title">Edit bar</span>
-					<button className="bar-edit-close" onClick={onClose}>
-						×
-					</button>
-				</div>
+				<SheetHeader>
+					<SheetTitle>Edit bar</SheetTitle>
+				</SheetHeader>
 
 				{/* Current chords */}
-				<div className="bar-edit-chords">
+				<div className="flex flex-wrap gap-2 min-h-[40px]">
 					{chords.length === 0 ? (
-						<span className="bar-edit-chords-hint">
+						<span className="text-sm text-muted-foreground">
 							Tap below to add chords
 						</span>
 					) : (
 						chords.map((chord, i) => (
 							<button
 								key={i}
-								className="bar-edit-chord-chip"
+								className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border bg-muted text-sm font-medium"
 								onClick={() => removeChord(i)}
 								title="Tap to remove"
 							>
 								{chordLabel(chord)}
-								<span className="bar-edit-chip-x">×</span>
+								<span className="text-muted-foreground text-xs">×</span>
 							</button>
 						))
 					)}
 				</div>
 
 				{/* Chord grid */}
-				<div className="bar-edit-grid">
+				<div className="grid grid-cols-4 gap-2">
 					{grid.map((btn) => (
 						<button
 							key={btn.numeral}
-							className="bar-edit-chord-btn"
+							className="flex flex-col items-center py-2.5 rounded-lg border border-border bg-muted/40 active:bg-primary/20"
 							onClick={() => addChord(btn.chord)}
 						>
-							<span className="bar-edit-btn-numeral">{btn.numeralLabel}</span>
-							<span className="bar-edit-btn-name">{btn.chordName}</span>
+							<span className="text-sm font-bold">{btn.numeralLabel}</span>
+							<span className="text-xs text-muted-foreground">
+								{btn.chordName}
+							</span>
 						</button>
 					))}
 				</div>
 
 				{/* Lyric */}
-				<input
-					className="bar-edit-lyric"
-					type="text"
+				<Input
 					value={lyric}
 					onChange={(e) => setLyric(e.target.value)}
 					placeholder="Lyric for this bar…"
@@ -117,19 +116,19 @@ export function BarEditSheet({ bar, song, sectionId, partId, onClose }: Props) {
 				/>
 
 				{/* Actions */}
-				<div className="bar-edit-actions">
-					<button className="bar-edit-delete-btn" onClick={handleDelete}>
+				<div className="flex gap-2">
+					<Button variant="destructive" onClick={handleDelete}>
 						Delete bar
-					</button>
-					<button
-						className="bar-edit-save-btn"
+					</Button>
+					<Button
+						className="flex-1"
 						onClick={handleSave}
 						disabled={chords.length === 0}
 					>
 						Save
-					</button>
+					</Button>
 				</div>
-			</div>
-		</div>
+			</SheetContent>
+		</Sheet>
 	);
 }

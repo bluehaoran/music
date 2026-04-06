@@ -1,24 +1,21 @@
-/**
- * LyricsSheet.tsx
- * Full-song lyrics editor using pipe | delimiters to align text to bars.
- *
- * Each section gets its own textarea. Bar lyrics are joined with " | " for
- * display and split on "|" when saving back to individual bars.
- *
- * Bars with no lyric show as empty segments. Extra segments beyond the bar
- * count are ignored; missing segments leave the bar lyric cleared.
- */
-
 import { useState } from "react";
 import type { Song } from "../../theory/model";
 import { updateBarLyrics } from "../../data/songRepo";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Props {
 	song: Song;
+	open: boolean;
 	onClose: () => void;
 }
 
-/** All unique bars in a section (not accounting for repeatCount). */
 function sectionBarCount(song: Song, sectionId: string): number {
 	const section = song.sections.find((s) => s.id === sectionId);
 	if (!section) return 0;
@@ -37,7 +34,7 @@ function buildSectionText(song: Song, sectionId: string): string {
 	return lyrics.join(" | ");
 }
 
-export function LyricsSheet({ song, onClose }: Props) {
+export function LyricsSheet({ song, open, onClose }: Props) {
 	const [texts, setTexts] = useState<Record<string, string>>(() => {
 		const result: Record<string, string> = {};
 		for (const section of song.sections) {
@@ -66,22 +63,29 @@ export function LyricsSheet({ song, onClose }: Props) {
 	const hasSections = song.sections.length > 0;
 
 	return (
-		<div className="lyrics-overlay" onPointerDown={onClose}>
-			<div className="lyrics-sheet" onPointerDown={(e) => e.stopPropagation()}>
-				{/* Header */}
-				<div className="lyrics-header">
-					<span className="lyrics-title">Lyrics</span>
-					<button className="lyrics-close" onClick={onClose} aria-label="Close">
-						×
-					</button>
-				</div>
+		<Sheet
+			open={open}
+			onOpenChange={(o) => {
+				if (!o) onClose();
+			}}
+		>
+			<SheetContent
+				side="bottom"
+				className="max-h-[85dvh] overflow-y-auto flex flex-col gap-4"
+			>
+				<SheetHeader>
+					<SheetTitle>Lyrics</SheetTitle>
+				</SheetHeader>
 
-				<p className="lyrics-hint">
-					Separate each bar's lyric with <span className="lyrics-pipe">|</span>
+				<p className="text-sm text-muted-foreground">
+					Separate each bar's lyric with{" "}
+					<code className="text-xs bg-muted px-1 py-0.5 rounded font-mono">
+						|
+					</code>
 				</p>
 
 				{!hasSections ? (
-					<p className="lyrics-empty">
+					<p className="text-sm text-muted-foreground">
 						Add some chords to the arrangement first.
 					</p>
 				) : (
@@ -93,10 +97,11 @@ export function LyricsSheet({ song, onClose }: Props) {
 						).join(" | ");
 
 						return (
-							<div key={section.id} className="lyrics-section">
-								<span className="lyrics-section-name">{section.name}</span>
-								<textarea
-									className="lyrics-textarea"
+							<div key={section.id} className="flex flex-col gap-1.5">
+								<span className="text-sm font-medium text-foreground">
+									{section.name}
+								</span>
+								<Textarea
 									value={texts[section.id] ?? ""}
 									onChange={(e) =>
 										setTexts((prev) => ({
@@ -107,20 +112,17 @@ export function LyricsSheet({ song, onClose }: Props) {
 									placeholder={placeholder}
 									rows={Math.max(2, Math.ceil(barCount / 3))}
 									spellCheck
+									className="resize-none"
 								/>
 							</div>
 						);
 					})
 				)}
 
-				<button
-					className="lyrics-save-btn"
-					onClick={handleSave}
-					disabled={!hasSections}
-				>
+				<Button onClick={handleSave} disabled={!hasSections}>
 					Save
-				</button>
-			</div>
-		</div>
+				</Button>
+			</SheetContent>
+		</Sheet>
 	);
 }

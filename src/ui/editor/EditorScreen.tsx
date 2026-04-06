@@ -7,6 +7,8 @@ import { SongSettingsSheet } from "./SongSettingsSheet";
 import { LyricsSheet } from "./LyricsSheet";
 import { ExportSheet } from "./ExportSheet";
 import { usePlayerStore } from "../../audio/playerStore";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { CurrentContext } from "./types";
 
 interface Props {
@@ -53,9 +55,18 @@ export function EditorScreen({ songId }: Props) {
 		await playerStore.play(song);
 	}, [song, isPlaying, currentContext, playerStore]);
 
-	if (song === undefined) return <div className="editor-loading">Loading…</div>;
+	if (song === undefined)
+		return (
+			<div className="flex items-center justify-center h-full text-muted-foreground">
+				Loading…
+			</div>
+		);
 	if (song === null)
-		return <div className="editor-loading">Song not found.</div>;
+		return (
+			<div className="flex items-center justify-center h-full text-muted-foreground">
+				Song not found.
+			</div>
+		);
 
 	let playLabel = "▶ Play";
 	if (isLoading) playLabel = "Loading…";
@@ -69,36 +80,41 @@ export function EditorScreen({ songId }: Props) {
 	}
 
 	return (
-		<div className="editor-root">
-			<div className="editor-meta">
-				<span className="editor-meta-chip">{song.bpm} BPM</span>
-				<span className="editor-meta-chip">
+		<div className="flex flex-col h-full">
+			{/* Meta chips */}
+			<div className="flex items-center gap-1.5 px-3 py-2 flex-wrap border-b border-border">
+				<Badge variant="secondary">{song.bpm} BPM</Badge>
+				<Badge variant="secondary">
 					{song.timeSignature.numerator}/{song.timeSignature.denominator}
-				</span>
-				<span className="editor-meta-chip">{song.instrument}</span>
-				{song.capo > 0 && (
-					<span className="editor-meta-chip">capo {song.capo}</span>
-				)}
+				</Badge>
+				<Badge variant="secondary">{song.instrument}</Badge>
+				{song.capo > 0 && <Badge variant="secondary">capo {song.capo}</Badge>}
 				{song.drumPatternId && (
-					<span className="editor-meta-chip editor-meta-chip--drum">drums</span>
+					<Badge variant="outline" className="text-primary border-primary/40">
+						drums
+					</Badge>
 				)}
-				<button
-					className="editor-lyrics-btn"
+				<div className="flex-1" />
+				<Button
+					variant="ghost"
+					size="sm"
 					onClick={() => setShowLyrics(true)}
 					aria-label="Edit lyrics"
 				>
 					♪
-				</button>
-				<button
-					className="editor-settings-btn"
+				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
 					onClick={() => setShowSettings(true)}
 					aria-label="Song settings"
 				>
 					⚙
-				</button>
+				</Button>
 			</div>
 
-			<div className="editor-score">
+			{/* Score */}
+			<div className="flex-1 overflow-y-auto">
 				<ScoreView
 					song={song}
 					currentContext={currentContext}
@@ -106,43 +122,44 @@ export function EditorScreen({ songId }: Props) {
 				/>
 			</div>
 
+			{/* Chord panel */}
 			<ChordPanel
 				song={song}
 				currentContext={currentContext}
 				onContextChange={setCurrentContext}
 			/>
 
-			<div className="editor-play-bar">
-				<button
-					className={[
-						"editor-play-bar-btn",
-						isPlaying ? "editor-play-bar-btn--playing" : "",
-					]
-						.filter(Boolean)
-						.join(" ")}
+			{/* Play bar */}
+			<div className="p-3 border-t border-border">
+				<Button
+					className="w-full h-12 text-base font-semibold"
+					variant={isPlaying ? "secondary" : "default"}
 					onClick={handlePlayStop}
 					disabled={isLoading}
 				>
 					{playLabel}
-				</button>
+				</Button>
 			</div>
 
-			{showSettings && (
-				<SongSettingsSheet
-					song={song}
-					onClose={() => setShowSettings(false)}
-					onExport={() => {
-						setShowSettings(false);
-						setShowExport(true);
-					}}
-				/>
-			)}
-			{showExport && (
-				<ExportSheet song={song} onClose={() => setShowExport(false)} />
-			)}
-			{showLyrics && (
-				<LyricsSheet song={song} onClose={() => setShowLyrics(false)} />
-			)}
+			<SongSettingsSheet
+				song={song}
+				open={showSettings}
+				onClose={() => setShowSettings(false)}
+				onExport={() => {
+					setShowSettings(false);
+					setShowExport(true);
+				}}
+			/>
+			<ExportSheet
+				song={song}
+				open={showExport}
+				onClose={() => setShowExport(false)}
+			/>
+			<LyricsSheet
+				song={song}
+				open={showLyrics}
+				onClose={() => setShowLyrics(false)}
+			/>
 		</div>
 	);
 }
