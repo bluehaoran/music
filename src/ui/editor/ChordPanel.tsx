@@ -252,7 +252,7 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 		Chord | undefined
 	>(undefined);
 	const [showKeyPicker, setShowKeyPicker] = useState(false);
-	const [minimized, setMinimized] = useState(true);
+	const [minimized, setMinimized] = useState(() => song.sections.length > 0);
 
 	useEffect(() => {
 		if (currentContext !== null) setMinimized(false);
@@ -481,40 +481,40 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 					</div>
 
 					{/* Chord grid — 4 top, 3 bottom */}
-					<div className="grid grid-cols-4 gap-2 p-3">
+					<div className="keyboard grid grid-cols-4 gap-2 p-3">
 						{grid.slice(0, 4).map((btn) => (
 							<button
 								key={btn.numeral}
-								className="flex flex-col items-center justify-center py-3 rounded-xl border border-border bg-muted/40 active:bg-primary/20 select-none touch-none"
+								className="key flex flex-col items-center justify-center py-3 rounded-xl border border-border bg-muted/40 active:bg-primary/20 select-none touch-none"
 								onPointerDown={() => onDown(btn)}
 								onPointerUp={() => onUp(btn)}
 								onPointerCancel={onCancel}
 								onContextMenu={(e) => e.preventDefault()}
 							>
 								<span className="text-base font-bold text-foreground leading-tight">
-									{btn.numeralLabel}
+									{btn.chordName}
 								</span>
 								<span className="text-xs text-muted-foreground leading-tight">
-									{btn.chordName}
+									({btn.numeralLabel})
 								</span>
 							</button>
 						))}
 					</div>
-					<div className="grid grid-cols-3 gap-2 px-3 pb-3">
+					<div className="keyboard grid grid-cols-3 gap-2 px-3 pb-3">
 						{grid.slice(4).map((btn) => (
 							<button
 								key={btn.numeral}
-								className="flex flex-col items-center justify-center py-3 rounded-xl border border-border bg-muted/40 active:bg-primary/20 select-none touch-none"
+								className="key flex flex-col items-center justify-center py-3 rounded-xl border border-border bg-muted/40 active:bg-primary/20 select-none touch-none"
 								onPointerDown={() => onDown(btn)}
 								onPointerUp={() => onUp(btn)}
 								onPointerCancel={onCancel}
 								onContextMenu={(e) => e.preventDefault()}
 							>
 								<span className="text-base font-bold text-foreground leading-tight">
-									{btn.numeralLabel}
+									{btn.chordName}
 								</span>
 								<span className="text-xs text-muted-foreground leading-tight">
-									{btn.chordName}
+									({btn.numeralLabel})
 								</span>
 							</button>
 						))}
