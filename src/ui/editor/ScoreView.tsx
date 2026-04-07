@@ -23,7 +23,6 @@ interface Props {
 	onContextChange: (ctx: CurrentContext) => void;
 }
 
-
 const SECTION_NAMES = [
 	"Verse",
 	"Chorus",

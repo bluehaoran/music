@@ -159,8 +159,30 @@ export function variantsForDegree(
 	// For major V, dom7 is the functional dominant — promote it to 2nd position.
 	const secondaries: ChordQuality[] =
 		numeral === 5 && mode === "major"
-			? ["dom7", "maj", "min", "maj7", "min7", "sus2", "sus4", "add9", "dim", "aug"]
-			: ["maj", "min", "dom7", "maj7", "min7", "sus2", "sus4", "add9", "dim", "aug"];
+			? [
+					"dom7",
+					"maj",
+					"min",
+					"maj7",
+					"min7",
+					"sus2",
+					"sus4",
+					"add9",
+					"dim",
+					"aug",
+				]
+			: [
+					"maj",
+					"min",
+					"dom7",
+					"maj7",
+					"min7",
+					"sus2",
+					"sus4",
+					"add9",
+					"dim",
+					"aug",
+				];
 	const candidates: ChordQuality[] = [natural, ...secondaries];
 
 	// Deduplicate while preserving order

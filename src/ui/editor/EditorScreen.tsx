@@ -34,7 +34,9 @@ export function EditorScreen({ songId }: Props) {
 	const [showLyrics, setShowLyrics] = useState(false);
 	const [showExport, setShowExport] = useState(false);
 
-	const [playScope, setPlayScope] = useState<"song" | "section" | "bar">("song");
+	const [playScope, setPlayScope] = useState<"song" | "section" | "bar">(
+		"song",
+	);
 	const [showScopePicker, setShowScopePicker] = useState(false);
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const didLongPress = useRef(false);
@@ -48,7 +50,10 @@ export function EditorScreen({ songId }: Props) {
 	useEffect(() => {
 		if (!showScopePicker) return;
 		const handler = (e: PointerEvent) => {
-			if (playBarRef.current && !playBarRef.current.contains(e.target as Node)) {
+			if (
+				playBarRef.current &&
+				!playBarRef.current.contains(e.target as Node)
+			) {
 				setShowScopePicker(false);
 			}
 		};

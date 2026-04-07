@@ -137,9 +137,14 @@ export interface Song {
 
 // ─── Drum pattern library entry ───────────────────────────────────────────────
 
+export type DrumSound = "bd" | "sn" | "hh" | "oh";
+export type DrumStep = DrumSound | null;
+export type DrumTrack = (DrumStep | DrumStep[])[];
+
 export interface DrumPattern {
 	id: string;
-	name: string; // e.g. '4-on-the-floor', 'Jazz 16ths', 'Waltz'
+	name: string;
 	timeSignature: TimeSignature;
-	strudel: string; // e.g. 'bd ~ ~ ~, ~ sn ~ sn, hh hh hh hh'
+	subdivision: string; // Tone.js subdivision, e.g. "4n", "8n", "16n"
+	tracks: Partial<Record<DrumSound, DrumTrack>>;
 }

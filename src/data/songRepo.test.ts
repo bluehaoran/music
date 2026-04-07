@@ -49,13 +49,11 @@ vi.mock("./db", () => {
 		db: {
 			songs,
 			settings,
-			transaction: vi.fn(
-				async (...args: unknown[]) => {
-					// Last argument is always the callback
-					const callback = args[args.length - 1] as () => Promise<unknown>;
-					return callback();
-				},
-			),
+			transaction: vi.fn(async (...args: unknown[]) => {
+				// Last argument is always the callback
+				const callback = args[args.length - 1] as () => Promise<unknown>;
+				return callback();
+			}),
 		},
 	};
 });

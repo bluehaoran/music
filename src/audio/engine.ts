@@ -118,7 +118,11 @@ interface BarEvent {
 	barId: string;
 }
 
-type BarCallback = (bar: { sectionId: string; partId: string; barId: string }) => void;
+type BarCallback = (bar: {
+	sectionId: string;
+	partId: string;
+	barId: string;
+}) => void;
 
 // ─── AudioEngine ─────────────────────────────────────────────────────────────
 
@@ -195,9 +199,9 @@ export class AudioEngine {
 			: null;
 		if (drumPattern) {
 			drumEngine.init();
-			drumEngine.schedule(drumPattern, spTick, tpb);
+			drumEngine.schedule(drumPattern);
 		} else {
-			drumEngine.clearParts();
+			drumEngine.clearSequences();
 		}
 
 		if (chordEvents.length === 0) return;
@@ -215,7 +219,11 @@ export class AudioEngine {
 		if (barEvents.length > 0) {
 			const barPart = new Tone.Part<BarEvent>((_, event) => {
 				for (const cb of this.barCallbacks)
-					cb({ sectionId: event.sectionId, partId: event.partId, barId: event.barId });
+					cb({
+						sectionId: event.sectionId,
+						partId: event.partId,
+						barId: event.barId,
+					});
 			}, barEvents);
 			barPart.start(0);
 			this.parts.push(barPart);
@@ -250,7 +258,7 @@ export class AudioEngine {
 	private clearParts(): void {
 		for (const p of this.parts) p.dispose();
 		this.parts = [];
-		drumEngine.clearParts();
+		drumEngine.clearSequences();
 	}
 }
 

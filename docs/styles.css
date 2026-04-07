@@ -1,13 +1,13 @@
 :root {
-  /* The "Inked" Primary Colors */
-  --chord-orange-ink: #F96213;   /* High saturation for active notes */
-  --chord-orange-glow: #FFA553;  /* Warmer glow for highlights */
+	/* The "Inked" Primary Colors */
+	--chord-orange-ink: #f96213; /* High saturation for active notes */
+	--chord-orange-glow: #ffa553; /* Warmer glow for highlights */
 
-  /* The "Sketch" Branding */
-  --sketch-blue: #284D7A;        /* For linework, borders, and text */
-  --sketch-paper: #FAF8F1;       /* The off-white background color */
+	/* The "Sketch" Branding */
+	--sketch-blue: #284d7a; /* For linework, borders, and text */
+	--sketch-paper: #faf8f1; /* The off-white background color */
 
-  /* The "Studio Gear" Neutrals */
-  --studio-grey-light: #E0E4E4;  /* For secondary button faces */
-  --studio-grey-dark: #8A9191;   /* For shadows and "metal" textures */
+	/* The "Studio Gear" Neutrals */
+	--studio-grey-light: #e0e4e4; /* For secondary button faces */
+	--studio-grey-dark: #8a9191; /* For shadows and "metal" textures */
 }

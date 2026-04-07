@@ -3,7 +3,7 @@ import type { Bar } from "../../theory/model";
 
 /**
  * This component represents one bar within a Part.
- * 
+ *
  * A bar contains 1+ chords, and will highlight as it is being played.
  */
 export function BarCell({
@@ -22,7 +22,6 @@ export function BarCell({
 			? "?"
 			: bar.slots.map((s) => chordLabel(s.chord)).join("·");
 
-			
 	return (
 		<button
 			className={[
@@ -31,8 +30,8 @@ export function BarCell({
 				isPlaying
 					? "border-primary bg-primary/20 text-primary"
 					: isSelected
-					? "border-primary/60 bg-primary/10"
-					: "border-border bg-card hover:bg-muted",
+						? "border-primary/60 bg-primary/10"
+						: "border-border bg-card hover:bg-muted",
 				bar.slots.length === 0 ? "opacity-50" : "",
 			]
 				.filter(Boolean)

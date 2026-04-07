@@ -32,7 +32,12 @@ function makeSong(overrides: Partial<Song> = {}): Song {
 
 describe("exportChordPro", () => {
 	it("exports metadata directives", () => {
-		const song = makeSong({ title: "My Song", key: "G", mode: "minor", bpm: 90 });
+		const song = makeSong({
+			title: "My Song",
+			key: "G",
+			mode: "minor",
+			bpm: 90,
+		});
 		const out = exportChordPro(song);
 		expect(out).toContain("{title: My Song}");
 		expect(out).toContain("{key: G minor}");
@@ -242,11 +247,9 @@ describe("importChordPro", () => {
 	});
 
 	it("handles bars with no lyrics", () => {
-		const input = [
-			"{start_of_verse: Verse}",
-			"[C] [G]",
-			"{end_of_verse}",
-		].join("\n");
+		const input = ["{start_of_verse: Verse}", "[C] [G]", "{end_of_verse}"].join(
+			"\n",
+		);
 		const result = importChordPro(input);
 		const bars = result.sections[0].parts[0].bars;
 		expect(bars[0].lyric).toBeUndefined();
@@ -268,11 +271,9 @@ describe("importChordPro", () => {
 	});
 
 	it("treats unknown qualities as major", () => {
-		const input = [
-			"{start_of_verse: V}",
-			"[Cweird]",
-			"{end_of_verse}",
-		].join("\n");
+		const input = ["{start_of_verse: V}", "[Cweird]", "{end_of_verse}"].join(
+			"\n",
+		);
 		const result = importChordPro(input);
 		expect(result.sections[0].parts[0].bars[0].slots[0].chord.quality).toBe(
 			"maj",
@@ -280,21 +281,15 @@ describe("importChordPro", () => {
 	});
 
 	it("derives section name from tag when label is omitted", () => {
-		const input = [
-			"{start_of_chorus}",
-			"[C]",
-			"{end_of_chorus}",
-		].join("\n");
+		const input = ["{start_of_chorus}", "[C]", "{end_of_chorus}"].join("\n");
 		const result = importChordPro(input);
 		expect(result.sections[0].name).toBe("Chorus");
 	});
 
 	it("handles flat/sharp root notes", () => {
-		const input = [
-			"{start_of_verse: V}",
-			"[Bb] [F#m]",
-			"{end_of_verse}",
-		].join("\n");
+		const input = ["{start_of_verse: V}", "[Bb] [F#m]", "{end_of_verse}"].join(
+			"\n",
+		);
 		const result = importChordPro(input);
 		const chords = result.sections[0].parts[0].bars.map(
 			(b) => b.slots[0].chord,
@@ -319,11 +314,9 @@ describe("importChordPro", () => {
 	});
 
 	it("parses half-diminished chords (ø7 and m7b5)", () => {
-		const input = [
-			"{start_of_verse: V}",
-			"[Bm7b5]",
-			"{end_of_verse}",
-		].join("\n");
+		const input = ["{start_of_verse: V}", "[Bm7b5]", "{end_of_verse}"].join(
+			"\n",
+		);
 		const result = importChordPro(input);
 		expect(result.sections[0].parts[0].bars[0].slots[0].chord.quality).toBe(
 			"min7b5",
