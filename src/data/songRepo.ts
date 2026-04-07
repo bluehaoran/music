@@ -48,9 +48,11 @@ async function mutateSong(
 	songId: string,
 	fn: (song: Song) => Partial<Omit<Song, "id">>,
 ): Promise<void> {
-	const song = await db.songs.get(songId);
-	if (!song) return;
-	await db.songs.update(songId, { ...fn(song), updatedAt: Date.now() });
+	await db.transaction("rw", db.songs, async () => {
+		const song = await db.songs.get(songId);
+		if (!song) return;
+		await db.songs.update(songId, { ...fn(song), updatedAt: Date.now() });
+	});
 }
 
 export async function addSection(songId: string, name: string): Promise<void> {
