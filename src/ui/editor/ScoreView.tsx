@@ -3,7 +3,7 @@
  * Arrangement display — shows the song's section/part/bar hierarchy.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Song } from "../../theory/model";
 import { usePlayerStore } from "../../audio/playerStore";
 import {
@@ -23,32 +23,6 @@ interface Props {
 	onContextChange: (ctx: CurrentContext) => void;
 }
 
-interface BarRef {
-	sectionId: string;
-	partId: string;
-	barId: string;
-	globalIndex: number;
-}
-
-function buildBarRefs(song: Song): BarRef[] {
-	const refs: BarRef[] = [];
-	let idx = 0;
-	for (const sec of song.sections) {
-		for (const part of sec.parts) {
-			for (let rep = 0; rep < part.repeatCount; rep++) {
-				for (const bar of part.bars) {
-					refs.push({
-						sectionId: sec.id,
-						partId: part.id,
-						barId: bar.id,
-						globalIndex: idx++,
-					});
-				}
-			}
-		}
-	}
-	return refs;
-}
 
 const SECTION_NAMES = [
 	"Verse",
@@ -66,19 +40,16 @@ export function ScoreView({ song, currentContext, onContextChange }: Props) {
 	const [nameDraft, setNameDraft] = useState("");
 	const nameInputRef = useRef<HTMLInputElement>(null);
 
-	const currentBarIndex = usePlayerStore((s) => s.currentBarIndex);
+	const currentBar = usePlayerStore((s) => s.currentBar);
 	const playState = usePlayerStore((s) => s.state);
-
-	const barRefs = useMemo(() => buildBarRefs(song), [song]);
-	const playingRef =
-		playState === "playing" ? (barRefs[currentBarIndex] ?? null) : null;
+	const playingBar = playState === "playing" ? currentBar : null;
 
 	function isBarPlaying(sectionId: string, partId: string, barId: string) {
 		return (
-			playingRef !== null &&
-			playingRef.sectionId === sectionId &&
-			playingRef.partId === partId &&
-			playingRef.barId === barId
+			playingBar !== null &&
+			playingBar.sectionId === sectionId &&
+			playingBar.partId === partId &&
+			playingBar.barId === barId
 		);
 	}
 

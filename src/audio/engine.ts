@@ -113,10 +113,12 @@ interface ChordEvent {
 
 interface BarEvent {
 	time: number;
-	barIndex: number;
+	sectionId: string;
+	partId: string;
+	barId: string;
 }
 
-type BarCallback = (barIndex: number) => void;
+type BarCallback = (bar: { sectionId: string; partId: string; barId: string }) => void;
 
 // ─── AudioEngine ─────────────────────────────────────────────────────────────
 
@@ -163,13 +165,17 @@ export class AudioEngine {
 		const barEvents: BarEvent[] = [];
 
 		let absoluteTick = 0;
-		let barIndex = 0;
 
 		for (const section of song.sections) {
 			for (const part of section.parts) {
 				for (let rep = 0; rep < part.repeatCount; rep++) {
 					for (const bar of part.bars) {
-						barEvents.push({ time: absoluteTick * spTick, barIndex });
+						barEvents.push({
+							time: absoluteTick * spTick,
+							sectionId: section.id,
+							partId: part.id,
+							barId: bar.id,
+						});
 						for (const slot of bar.slots) {
 							chordEvents.push({
 								time: (absoluteTick + slot.startTick) * spTick,
@@ -178,7 +184,6 @@ export class AudioEngine {
 							});
 						}
 						absoluteTick += tpb;
-						barIndex++;
 					}
 				}
 			}
@@ -209,7 +214,8 @@ export class AudioEngine {
 
 		if (barEvents.length > 0) {
 			const barPart = new Tone.Part<BarEvent>((_, event) => {
-				for (const cb of this.barCallbacks) cb(event.barIndex);
+				for (const cb of this.barCallbacks)
+					cb({ sectionId: event.sectionId, partId: event.partId, barId: event.barId });
 			}, barEvents);
 			barPart.start(0);
 			this.parts.push(barPart);

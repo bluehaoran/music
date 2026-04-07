@@ -127,4 +127,8 @@
 	html {
 		@apply font-sans;
 	}
+	button {
+		-webkit-user-select: none;
+		user-select: none;
+	}
 }

@@ -28,7 +28,7 @@ export const SCALE_INTERVALS: Record<ScaleMode, number[]> = {
  * minor: i   ii° III iv  v    VI  VII
  */
 export const NATURAL_QUALITIES: Record<ScaleMode, ChordQuality[]> = {
-	major: ["maj", "min", "min", "maj", "dom7", "min", "dim"],
+	major: ["maj", "min", "min", "maj", "maj", "min", "dim"],
 	minor: ["min", "dim", "maj", "min", "min", "maj", "maj"],
 };
 

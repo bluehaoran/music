@@ -4,13 +4,19 @@ import { audioEngine } from "./engine";
 
 export type PlaybackState = "stopped" | "playing" | "paused";
 
+export interface PlayingBar {
+	sectionId: string;
+	partId: string;
+	barId: string;
+}
+
 interface PlayerStore {
 	/** Transport playback state. */
 	state: PlaybackState;
 	/** True while samples are being fetched/decoded. */
 	isLoading: boolean;
-	/** 0-based index of the bar currently playing (updated each new bar). */
-	currentBarIndex: number;
+	/** Identity of the bar currently playing (updated each new bar). */
+	currentBar: PlayingBar | null;
 	/** ID of the song currently loaded into the Transport schedule. */
 	scheduledSongId: string | null;
 
@@ -23,13 +29,13 @@ interface PlayerStore {
 	stop(): void;
 
 	/** Internal — called by the audioEngine bar callback. */
-	_setBarIndex(i: number): void;
+	_setCurrentBar(bar: PlayingBar): void;
 }
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
 	state: "stopped",
 	isLoading: false,
-	currentBarIndex: 0,
+	currentBar: null,
 	scheduledSongId: null,
 
 	async play(song) {
@@ -42,7 +48,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 			return;
 		}
 
-		set({ isLoading: true, currentBarIndex: 0 });
+		set({ isLoading: true, currentBar: null });
 		try {
 			await audioEngine.load(song.instrument);
 			audioEngine.stop();
@@ -62,15 +68,15 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 
 	stop() {
 		audioEngine.stop();
-		set({ state: "stopped", currentBarIndex: 0 });
+		set({ state: "stopped", currentBar: null });
 	},
 
-	_setBarIndex(i) {
-		set({ currentBarIndex: i });
+	_setCurrentBar(bar) {
+		set({ currentBar: bar });
 	},
 }));
 
 // Wire engine bar-progress events into the store
-audioEngine.onBar((barIndex) => {
-	usePlayerStore.getState()._setBarIndex(barIndex);
+audioEngine.onBar((bar) => {
+	usePlayerStore.getState()._setCurrentBar(bar);
 });
