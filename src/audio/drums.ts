@@ -102,7 +102,7 @@ export const BUILTIN_PATTERNS: DrumPattern[] = [
 		tracks: {
 			bd: ["bd", null, null, null, null, null],
 			sn: [null, "hh", "hh", null, "hh", "hh"],
-			hh: [null, null, "sn", "sn", null, null],
+			hh: [null, null, null, "sn", null, null],
 		},
 	},
 ];

@@ -14,8 +14,8 @@ export default defineConfig({
 			manifest: {
 				name: "Unchorded",
 				short_name: "Unchorded",
-				theme_color: "#6667AB",
-				background_color: "#16171d",
+				theme_color: "#f96213",
+				background_color: "#faf8f1",
 				display: "standalone",
 				orientation: "portrait",
 				icons: [

@@ -141,3 +141,12 @@
 		user-select: none;
 	}
 }
+
+
+header {
+	background-image: url('assets/header-mobile.png');
+	background-position-x: left;
+    background-size: cover;
+    background-repeat: no-repeat;
+	background-color: #faf8f1;
+}
