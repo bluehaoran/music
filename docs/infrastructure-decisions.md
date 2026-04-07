@@ -20,7 +20,7 @@ The original plan was a native Android app using Kotlin, Jetpack Compose, Oboe, 
 - **Language:** TypeScript
 - **UI framework:** React (Vite scaffold)
 - **Persistence:** IndexedDB via Dexie.js — local-only, auto-save
-- **Architecture:** Single-page app, React state management (zustand or built-in context/reducer — TBD)
+- **Architecture:** Single-page app, Zustand for state management
 - **Deployment target:** PWA installed to Pixel 9 home screen (also works in any modern browser)
 
 ### Audio layer
@@ -41,7 +41,7 @@ The original plan was a native Android app using Kotlin, Jetpack Compose, Oboe, 
 - **IDE:** VS Code on Windows 11
 - **Runtime:** Node.js (current LTS)
 - **Build system:** Vite
-- **Package manager:** npm
+- **Package manager:** bun
 - **Deployment (dev):** Vite dev server, accessed on Pixel 9 via local network (same Wi-Fi)
 - **Deployment (prod):** Static build hosted on any static host (Vercel, Netlify, GitHub Pages, or self-hosted). PWA manifest + service worker for offline install.
 
@@ -107,10 +107,4 @@ No SDK version targeting needed. The Web Audio API and AudioContext are supporte
 
 ## Remaining open decisions
 
-These items from the key decisions document are unaffected by the platform change and remain open:
-
-- Data model: canonical song representation and beat subdivision granularity
-- Persistence UX: auto-save vs. manual save, song library screen
-- Capo behaviour: whether capo transposes displayed chord names or only voicing diagrams
-- Specific SoundFont / sample set selection
-- State management approach: zustand vs. React context/reducer
+- Specific SoundFont / sample set selection (currently using Salamander piano + FluidR3 guitar)

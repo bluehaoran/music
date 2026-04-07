@@ -20,25 +20,24 @@ A web app (PWA, Pixel 9 primary target) for quickly sketching out music — chor
 - Rhythm (drum pattern): cascading override Song → Section → Part → Bar
 - Transposition logic (capo is voicing-layer only)
 - Pure TypeScript module, zero framework dependencies
-- 81/81 unit tests passing
-- **Files:** `src/theory/` — notes.ts, scales.ts, chords.ts, nashville.ts, transposition.ts, model.ts, beatSlots.ts, songFactory.ts, index.ts
+- 81 unit tests passing
+- **Files:** `src/theory/` — notes.ts, scales.ts, chords.ts, nashville.ts, transposition.ts, model.ts, beatSlots.ts, songFactory.ts, voicings.ts, index.ts
 
 ### 2. React App Scaffolding ✅ COMPLETE
 
 - Vite + TypeScript project setup
 - PWA manifest + service worker
 - React routing and layout
-- Dexie.js schema and song repository
-- Zustand or context/reducer for UI state (TBD)
-- *Not yet started*
+- Dexie.js schema and song repository with transactional mutations
+- Zustand for navigation and playback state
+- ShadCN UI components + Tailwind CSS
 
 ### 3. Audio Playback Engine ✅ COMPLETE
 
-- Tone.js Transport + Sampler
-- SoundFont-derived samples for guitar, piano, drum kit
-- Drum pattern player (Strudel notation → Tone.js Sequence)
-- BPM control + tempo presets
-- *Not yet started*
+- Tone.js Transport + Sampler (Salamander piano, FluidR3 guitar)
+- Drum pattern player (Strudel notation → Tone.js synthesised drums)
+- Built-in patterns: 4-on-the-floor, swing, waltz, jazz, etc.
+- BPM control, bar-tracking callbacks for playback highlight
 
 ### 4. Chord Input & Selection UI ✅ COMPLETE
 
@@ -47,7 +46,7 @@ A web app (PWA, Pixel 9 primary target) for quickly sketching out music — chor
 - Each button shows numeral + resolved chord name (e.g. "IV / F")
 - Long-press popover for chord variants (sus2, sus4, maj7, dom7, etc.)
 - Quick-push chords then press "loop" to play 1 bar each, looping
-- *Not yet started*
+- Guitar chord diagram preview in variant popover
 
 ### 5. Score / Arrangement Display & Editing ✅ COMPLETE
 
@@ -59,23 +58,23 @@ A web app (PWA, Pixel 9 primary target) for quickly sketching out music — chor
   - **Bar** → 1+ BeatSlots (total ticks = ticksPerBar)
   - **Part** → sequence of bars with repeat count (e.g. `x3`)
   - **Section** → named grouping of Parts (Intro, Verse, Chorus, Bridge, Interlude, Outro)
-- *Not yet started*
+- Inline section rename, add/delete sections
+- Repeat count control per part
 
-### 6. Instrument & Voicing Management
+### 6. Instrument & Voicing Management — PARTIAL
 
-- Toggle between guitar and piano
-- Guitar: default open chord voicings (e.g. C = x-3-2-0-1-0)
-- Long-press for variant voicings + chord diagram view
-- Custom voicing input and save
-- Capo setting: changes voicing diagrams only — no pitch effect
-- *Not yet started*
+- Toggle between guitar and piano ✅
+- Guitar: default open chord voicings with diagram display ✅
+- Long-press for variant voicings + chord diagram view ✅
+- Capo setting: changes voicing diagrams only — no pitch effect ✅
+- Custom voicing input and save — *not yet started*
 
-### 7. Drum Patterns
+### 7. Drum Patterns ✅ COMPLETE
 
-- Bank of standard patterns per time signature
-- Strudel notation: bd, sn, hh, oh, etc.
-- Override at Song / Section / Part / Bar level
-- *Not yet started*
+- Bank of built-in patterns per time signature (4-on-the-floor, swing, waltz, jazz, etc.)
+- Strudel notation: bd, sn, hh, oh, tm, etc.
+- Pattern selector in song settings
+- Override at Song level (Section/Part/Bar override not yet in UI)
 
 ### 8. Lyrics Alignment ✅ COMPLETE
 

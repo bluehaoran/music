@@ -12,28 +12,31 @@ This is **Unchorded**, a Music Sketcher web app (PWA) for quickly sketching out 
 
 **✅ Complete:**
 
-- Music theory engine in `src/theory/` (81/81 tests passing)
+- Music theory engine in `src/theory/` — fully tested
 - Core data model: Song → Section → Part → Bar → BeatSlot
 - Nashville number system, chord construction, transposition, enharmonic spelling
 - Beat subdivision with explicit 16th-note tick system
 - React app scaffolding (Vite + TypeScript + React)
 - PWA configuration (vite-plugin-pwa configured)
-- Core dependencies installed: Tone.js, Dexie.js, Zustand
-- Directory structure: `src/app/`, `src/ui/`, `src/audio/`, `src/data/`, `src/theory/`
+- Dexie.js schema and songRepo CRUD/mutation layer (transactional writes)
+- Tone.js audio engine with piano + guitar samplers, drum patterns
+- React UI: chord panel, score view, bar editor, lyrics, settings, ChordPro import/export
+- Zustand stores for navigation and playback state
+- 128 tests across theory, ChordPro, and songRepo
 
 **🚧 Next Steps:**
 
-- Dexie.js schema definition and database setup
-- Tone.js audio engine implementation
-- React UI components (chord input, score display, etc.)
+- UI component tests (@testing-library/react)
+- Error boundaries for audio engine failures
+- Advanced voicing management
 
 ## Architecture
 
 ### Module Structure
 
 - **`src/theory/`** — Pure TypeScript music theory engine. Zero framework dependencies. Fully unit-testable.
-  - Files: note.ts, scales.ts, chords.ts, nashville.ts, transposition.ts, model.ts, beatSlots.ts, songFactory.ts
-  - Exports: Note, Scale, Chord, Key, Song, Section, Part, Bar, BeatSlot, transposition utilities
+  - Files: notes.ts, scales.ts, chords.ts, nashville.ts, transposition.ts, model.ts, beatSlots.ts, songFactory.ts, voicings.ts
+  - Exports: Note, Scale, Chord, Key, Song, Section, Part, Bar, BeatSlot, transposition utilities, guitar voicings
 
 - **`src/app/`** — React application shell, routing, global layout
 
@@ -47,9 +50,10 @@ This is **Unchorded**, a Music Sketcher web app (PWA) for quickly sketching out 
   - No native code; runs entirely in Web Audio API
 
 - **`src/data/`** — Persistence layer
-  - Dexie.js schema for songs, voicings, settings
+  - Dexie.js schema (`db.ts`) for songs and settings
+  - `songRepo.ts` — CRUD and structural mutations (transactional read-then-write via `mutateSong`)
+  - `chordpro.ts` — ChordPro export/import with bar/section inference
   - Auto-save on every meaningful mutation
-  - ChordPro export/import with bar/section inference
 
 ### Audio Engine Integration Path
 
@@ -124,7 +128,7 @@ bun test --watch
 bun test src/theory/theory.test.ts
 ```
 
-The music theory engine has 81 passing unit tests. New UI components should include tests using @testing-library/react.
+128 tests across 3 files: theory engine (81), ChordPro import/export (29), songRepo mutations (18). New UI components should include tests using @testing-library/react.
 
 ## Development Workflow
 
@@ -165,7 +169,7 @@ bun preview
 ## Important Context
 
 - The core use case is **scheduled chord playback**, not live instrument performance — Web Audio latency is sufficient
-- The theory engine is already complete and battle-tested (81 passing tests)
+- The theory engine is already complete and battle-tested
 - UI inspiration: Hichord, Telepathic Instruments Orchid (radically simple surfaces hiding deep functionality)
 
 ## Reference Documentation
