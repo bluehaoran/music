@@ -31,18 +31,22 @@ A living document. Update as decisions are made during refinement.
 
 ---
 
+## Decided (continued)
+
+| # | Decision | Choice | Rationale | Date |
+|---|----------|--------|-----------|------|
+| 21 | Song Library UI | Opens to song list (most recent first), tap to edit | Simple and discoverable | 2026-04-04 |
+| 22 | State management | Zustand | Lightweight stores for navigation + playback state | 2026-04-04 |
+| 23 | SoundFont samples | Salamander (piano), FluidR3 (guitar) via CDN | Good quality, freely hosted | 2026-04-04 |
+| 24 | UI component library | ShadCN-style (unstyled + CVA) + Tailwind CSS | Consistent design system, mobile-first | 2026-04-04 |
+| 25 | Code formatter/linter | Biome | Fast, replaces ESLint + Prettier | 2026-04-04 |
+| 26 | Package manager | bun | Fast installs and test runner | 2026-04-04 |
+
 ## Open — Needs Decision
 
-### Song Library UI
-- Does the app open to a song list, or directly to the last song?
-- How is the library presented (list, grid, recents)?
-
 ### Specific SoundFont / Sample Set
-- FluidR3 GM, MuseScore General, or other?
-- Affects bundle size and instrument realism.
-
-### State Management
-- Zustand vs. React context/reducer for UI state?
+- Currently using Salamander piano + FluidR3 guitar via CDN
+- Consider self-hosting for offline PWA reliability
 
 ---
 
@@ -51,5 +55,7 @@ A living document. Update as decisions are made during refinement.
 - Sharing songs between devices
 - Metronome click track (separate from drum pattern)
 - Strum pattern notation for guitar
-- Dark mode / theme customisation
+- Dark mode / theme customisation (dark theme is current default)
 - Slash chords (G/B) — deferred to v2
+- Error boundaries for audio engine failures
+- UI component tests
