@@ -194,11 +194,32 @@ export class DrumEngine {
 
 export const drumEngine = new DrumEngine();
 
-/** Returns patterns compatible with a given time signature. */
+// ─── Custom pattern registry ─────────────────────────────────────────────────
+
+let _customPatterns: DrumPattern[] = [];
+
+export function setCustomPatterns(patterns: DrumPattern[]): void {
+	_customPatterns = patterns;
+}
+
+export function getCustomPatterns(): DrumPattern[] {
+	return _customPatterns;
+}
+
+/** Returns all patterns (built-in + custom) compatible with a given time signature. */
 export function patternsForTimeSig(ts: TimeSignature): DrumPattern[] {
-	return BUILTIN_PATTERNS.filter(
+	const all = [...BUILTIN_PATTERNS, ..._customPatterns];
+	return all.filter(
 		(p) =>
 			p.timeSignature.numerator === ts.numerator &&
 			p.timeSignature.denominator === ts.denominator,
+	);
+}
+
+/** Find a pattern by id across built-in and custom patterns. */
+export function findPattern(id: string): DrumPattern | undefined {
+	return (
+		BUILTIN_PATTERNS.find((p) => p.id === id) ??
+		_customPatterns.find((p) => p.id === id)
 	);
 }
