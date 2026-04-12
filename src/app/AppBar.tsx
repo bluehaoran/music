@@ -3,16 +3,54 @@ import { useRef } from "react";
 import { db } from "../data/db";
 import { updateSong } from "../data/songRepo";
 import { Button } from "@/components/ui/button";
-import { useNavStore } from "./nav";
+import { type HomeTab, useNavStore } from "./nav";
 
-export function AppBar() {
+interface Props {
+	onImportClick?: () => void;
+}
+
+const HOME_TABS: { id: HomeTab; label: string }[] = [
+	{ id: "songs", label: "Songs" },
+	{ id: "drums", label: "Drums" },
+];
+
+export function AppBar({ onImportClick }: Props) {
 	const screen = useNavStore((s) => s.screen);
+	const goToTab = useNavStore((s) => s.goToTab);
 	const goToLibrary = useNavStore((s) => s.goToLibrary);
 
-	if (screen.id === "library") {
+	if (screen.id === "home") {
 		return (
-			<header className="h-14 flex-shrink-0 flex items-center px-4 bg-background border-b border-border sticky top-0 z-10">
-				<span className="text-lg font-semibold text-foreground">Unchorded</span>
+			<header className="h-14 flex-shrink-0 flex items-center px-3 gap-2 bg-background border-b border-border">
+				<span className="text-base font-semibold text-foreground shrink-0">
+					Unchorded
+				</span>
+				<div className="flex-1 flex justify-center">
+					<div className="flex rounded-lg border border-border overflow-hidden">
+						{HOME_TABS.map(({ id, label }) => (
+							<button
+								key={id}
+								className={[
+									"px-5 py-1.5 text-sm",
+									screen.tab === id
+										? "bg-primary text-primary-foreground"
+										: "bg-muted/40 text-foreground",
+								].join(" ")}
+								onClick={() => goToTab(id)}
+							>
+								{label}
+							</button>
+						))}
+					</div>
+				</div>
+				{screen.tab === "songs" && onImportClick && (
+					<button
+						className="text-sm text-muted-foreground hover:text-foreground shrink-0"
+						onClick={onImportClick}
+					>
+						Import
+					</button>
+				)}
 			</header>
 		);
 	}

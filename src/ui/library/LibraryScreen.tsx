@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { db } from "../../data/db";
 import { addSong, deleteSong, updateSong } from "../../data/songRepo";
 import { useNavStore } from "../../app/nav";
@@ -7,12 +7,16 @@ import type { ChordProImport } from "../../data/chordpro";
 import { Button } from "@/components/ui/button";
 import { ImportSheet } from "./ImportSheet";
 
-export function LibraryScreen() {
+interface Props {
+	showImport: boolean;
+	onImportClose: () => void;
+}
+
+export function LibraryScreen({ showImport, onImportClose }: Props) {
 	const songs = useLiveQuery(() =>
 		db.songs.orderBy("updatedAt").reverse().toArray(),
 	);
 	const goToEditor = useNavStore((s) => s.goToEditor);
-	const [showImport, setShowImport] = useState(false);
 
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const didLongPress = useRef(false);
@@ -34,7 +38,7 @@ export function LibraryScreen() {
 		if (data.sections.length > 0) {
 			await updateSong(song.id, { sections: data.sections });
 		}
-		setShowImport(false);
+		onImportClose();
 		goToEditor(song.id);
 	}
 
@@ -106,19 +110,10 @@ export function LibraryScreen() {
 				+
 			</Button>
 
-			<Button
-				variant="outline"
-				className="fixed bottom-6 right-24"
-				onClick={() => setShowImport(true)}
-				aria-label="Import ChordPro"
-			>
-				Import
-			</Button>
-
 			<ImportSheet
 				open={showImport}
 				onImport={handleImport}
-				onClose={() => setShowImport(false)}
+				onClose={onImportClose}
 			/>
 		</>
 	);

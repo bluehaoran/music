@@ -1,15 +1,20 @@
 import { create } from "zustand";
 
-export type Screen = { id: "library" } | { id: "editor"; songId: string };
+export type HomeTab = "songs" | "drums";
+export type Screen =
+	| { id: "home"; tab: HomeTab }
+	| { id: "editor"; songId: string };
 
 interface NavStore {
 	screen: Screen;
-	goToLibrary: () => void;
+	goToTab: (tab: HomeTab) => void;
+	goToLibrary: () => void; // alias: go home to songs tab
 	goToEditor: (songId: string) => void;
 }
 
 export const useNavStore = create<NavStore>((set) => ({
-	screen: { id: "library" },
-	goToLibrary: () => set({ screen: { id: "library" } }),
+	screen: { id: "home", tab: "songs" },
+	goToTab: (tab) => set({ screen: { id: "home", tab } }),
+	goToLibrary: () => set({ screen: { id: "home", tab: "songs" } }),
 	goToEditor: (songId) => set({ screen: { id: "editor", songId } }),
 }));
