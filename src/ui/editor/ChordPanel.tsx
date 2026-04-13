@@ -91,7 +91,7 @@ interface VariantPopoverProps {
 	target: GridButton;
 	songKey: NoteName;
 	mode: ScaleMode;
-	instrument: "guitar" | "piano";
+	instrument: "guitar" | "piano" | "synth";
 	initialChord?: Chord;
 	onSelect: (chord: Chord) => void;
 	onClose: () => void;
@@ -318,7 +318,10 @@ export function ChordPanel({ song, currentContext, onContextChange }: Props) {
 	}, []);
 
 	const { onDown, onUp, onCancel } = useLongPress(
-		(btn: GridButton) => handleChordInput(btn.chord),
+		(btn: GridButton) => {
+			handleChordInput(btn.chord);
+			handlePlayChord(btn.chord);
+		},
 		openGridPopover,
 	);
 

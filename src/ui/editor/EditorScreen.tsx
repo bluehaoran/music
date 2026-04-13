@@ -21,7 +21,7 @@ const TIME_SIGS: TimeSignature[] = [
 	{ numerator: 2, denominator: 4 },
 ];
 
-const INSTRUMENTS = ["guitar", "piano"] as const;
+const INSTRUMENTS = ["guitar", "piano", "synth"] as const;
 
 interface Props {
 	songId: string;

@@ -121,7 +121,7 @@ export interface Song {
 	bpm: number;
 
 	// Instrument settings
-	instrument: "guitar" | "piano";
+	instrument: "guitar" | "piano" | "synth";
 	capo: number; // fret number 0–7; purely a voicing hint, no pitch effect
 
 	// Drum pattern (inherited by all sections/parts/bars unless overridden)

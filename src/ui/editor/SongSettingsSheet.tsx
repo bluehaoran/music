@@ -129,7 +129,7 @@ export function SongSettingsSheet({ song, open, onClose, onExport }: Props) {
 					<div className="flex items-center justify-between">
 						<span className="text-sm font-medium">Instrument</span>
 						<div className="flex rounded-lg border border-border overflow-hidden">
-							{(["guitar", "piano"] as const).map((inst) => (
+							{(["guitar", "piano", "synth"] as const).map((inst) => (
 								<button
 									key={inst}
 									className={[

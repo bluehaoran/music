@@ -80,7 +80,7 @@ export interface NewSongOptions {
 	mode?: ScaleMode;
 	timeSignature?: TimeSignature;
 	bpm?: number;
-	instrument?: "guitar" | "piano";
+	instrument?: "guitar" | "piano" | "synth";
 	capo?: number;
 	drumPatternId?: DrumPatternId;
 }

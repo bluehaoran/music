@@ -98,9 +98,10 @@ const SAMPLE_BASE: Record<"guitar" | "piano", string> = {
 };
 
 /** Octave for chord voicing: guitar sounds best rooted around 3, piano around 4. */
-const CHORD_OCTAVE: Record<"guitar" | "piano", number> = {
+const CHORD_OCTAVE: Record<"guitar" | "piano" | "synth", number> = {
 	guitar: 3,
 	piano: 4,
+	synth: 4,
 };
 
 // ─── Event types ─────────────────────────────────────────────────────────────
@@ -127,25 +128,33 @@ type BarCallback = (bar: {
 // ─── AudioEngine ─────────────────────────────────────────────────────────────
 
 export class AudioEngine {
-	private sampler: Tone.Sampler | null = null;
+	private sampler: Tone.Sampler | Tone.PolySynth | null = null;
 	private parts: Tone.Part[] = [];
-	private currentInstrument: "guitar" | "piano" | null = null;
+	private currentInstrument: "guitar" | "piano" | "synth" | null = null;
 	private readonly barCallbacks = new Set<BarCallback>();
 
 	/**
-	 * Load (or reuse) the sampler for the given instrument.
+	 * Load (or reuse) the sampler/synth for the given instrument.
 	 * Must be called before schedule(). Resolves when all samples are decoded.
 	 */
-	async load(instrument: "guitar" | "piano"): Promise<void> {
+	async load(instrument: "guitar" | "piano" | "synth"): Promise<void> {
 		if (this.currentInstrument === instrument && this.sampler !== null) return;
 		this.sampler?.dispose();
-		this.sampler = new Tone.Sampler({
-			urls: SAMPLE_URLS[instrument],
-			baseUrl: SAMPLE_BASE[instrument],
-			release: 1,
-		}).toDestination();
-		this.currentInstrument = instrument;
-		await Tone.loaded();
+		if (instrument === "synth") {
+			this.sampler = new Tone.PolySynth(Tone.Synth, {
+				oscillator: { type: "triangle" },
+				envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 1.2 },
+			}).toDestination();
+			this.currentInstrument = "synth";
+		} else {
+			this.sampler = new Tone.Sampler({
+				urls: SAMPLE_URLS[instrument],
+				baseUrl: SAMPLE_BASE[instrument],
+				release: 1,
+			}).toDestination();
+			this.currentInstrument = instrument;
+			await Tone.loaded();
+		}
 	}
 
 	/**
