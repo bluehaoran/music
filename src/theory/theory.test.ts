@@ -166,9 +166,8 @@ describe("buildScale", () => {
 
 describe("naturalQuality", () => {
 	it("I in major = maj", () => expect(naturalQuality(1, "major")).toBe("maj"));
-	it("V in major = dom7", () =>
-		expect(naturalQuality(5, "major")).toBe("dom7"));
 	it("ii in major = min", () => expect(naturalQuality(2, "major")).toBe("min"));
+	it("V in major = maj", () => expect(naturalQuality(5, "major")).toBe("maj"));
 	it("vii in major = dim", () =>
 		expect(naturalQuality(7, "major")).toBe("dim"));
 	it("i in minor = min", () => expect(naturalQuality(1, "minor")).toBe("min"));
@@ -235,9 +234,9 @@ describe("nashvilleToChord", () => {
 		const chord = nashvilleToChord(4, "G", "major");
 		expect(chord).toEqual({ root: "C", quality: "maj" });
 	});
-	it("V in G major = D dom7", () => {
+	it("V in G major = D maj", () => {
 		const chord = nashvilleToChord(5, "G", "major");
-		expect(chord).toEqual({ root: "D", quality: "dom7" });
+		expect(chord).toEqual({ root: "D", quality: "maj" });
 	});
 	it("ii in D major = Em", () => {
 		const chord = nashvilleToChord(2, "D", "major");
@@ -254,17 +253,17 @@ describe("buildDiatonicGrid", () => {
 		const grid = buildDiatonicGrid("C", "major");
 		expect(grid).toHaveLength(7);
 	});
-	it("C major grid: I=C, IV=F, V=G7", () => {
+	it("C major grid: I=C, IV=F, V=G", () => {
 		const grid = buildDiatonicGrid("C", "major");
 		expect(grid[0].chordName).toBe("C");
 		expect(grid[3].chordName).toBe("F");
-		expect(grid[4].chordName).toBe("G7");
+		expect(grid[4].chordName).toBe("G");
 	});
 	it("C major grid numeral labels", () => {
 		const grid = buildDiatonicGrid("C", "major");
 		expect(grid[0].numeralLabel).toBe("I");
 		expect(grid[1].numeralLabel).toBe("ii");
-		expect(grid[4].numeralLabel).toBe("V7");
+		expect(grid[4].numeralLabel).toBe("V");
 	});
 	it("A minor grid: i=Am, III=C, VII=G", () => {
 		const grid = buildDiatonicGrid("A", "minor");
