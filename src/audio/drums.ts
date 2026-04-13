@@ -113,6 +113,9 @@ export class DrumEngine {
 	private kick: Tone.MembraneSynth | null = null;
 	private snare: Tone.NoiseSynth | null = null;
 	private hihat: Tone.MetalSynth | null = null;
+	private rimshot: Tone.NoiseSynth | null = null;
+	private ride: Tone.MetalSynth | null = null;
+	private tom: Tone.MembraneSynth | null = null;
 	private sequences: Tone.Sequence<DrumStep>[] = [];
 
 	/** Lazy-initialise synths (deferred until first use to avoid audio context issues). */
@@ -142,21 +145,51 @@ export class DrumEngine {
 		}).toDestination();
 		this.hihat.frequency.value = 400;
 		this.hihat.volume.value = -10;
+
+		this.rimshot = new Tone.NoiseSynth({
+			noise: { type: "pink" },
+			envelope: { attack: 0.001, decay: 0.06, sustain: 0, release: 0.02 },
+		}).toDestination();
+		this.rimshot.volume.value = -8;
+
+		this.ride = new Tone.MetalSynth({
+			envelope: { attack: 0.001, decay: 0.4, release: 0.3, sustain: 0.05 },
+			harmonicity: 3.1,
+			modulationIndex: 16,
+			resonance: 3200,
+			octaves: 1.2,
+		}).toDestination();
+		this.ride.frequency.value = 280;
+		this.ride.volume.value = -12;
+
+		this.tom = new Tone.MembraneSynth({
+			pitchDecay: 0.08,
+			octaves: 4,
+			oscillator: { type: "sine" },
+			envelope: { attack: 0.001, decay: 0.25, sustain: 0, release: 0.1 },
+		}).toDestination();
+		this.tom.volume.value = -2;
 	}
 
 	schedule(pattern: DrumPattern): void {
 		this.clearSequences();
-		if (!this.kick || !this.snare || !this.hihat) return;
+		if (!this.kick || !this.snare || !this.hihat || !this.rimshot || !this.ride || !this.tom) return;
 
 		const kick = this.kick;
 		const snare = this.snare;
 		const hihat = this.hihat;
+		const rimshot = this.rimshot;
+		const ride = this.ride;
+		const tom = this.tom;
 
 		const trigger = (sound: DrumSound, time: number) => {
 			if (sound === "bd") kick.triggerAttackRelease("C1", "8n", time);
 			else if (sound === "sn") snare.triggerAttackRelease("8n", time);
 			else if (sound === "hh") hihat.triggerAttackRelease("32n", time);
 			else if (sound === "oh") hihat.triggerAttackRelease("8n", time);
+			else if (sound === "rs") rimshot.triggerAttackRelease("16n", time);
+			else if (sound === "rd") ride.triggerAttackRelease("16n", time);
+			else if (sound === "tm") tom.triggerAttackRelease("G1", "8n", time);
 		};
 
 		for (const [sound, track] of Object.entries(pattern.tracks) as [
@@ -189,6 +222,12 @@ export class DrumEngine {
 		this.snare = null;
 		this.hihat?.dispose();
 		this.hihat = null;
+		this.rimshot?.dispose();
+		this.rimshot = null;
+		this.ride?.dispose();
+		this.ride = null;
+		this.tom?.dispose();
+		this.tom = null;
 	}
 }
 

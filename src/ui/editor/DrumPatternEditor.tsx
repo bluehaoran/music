@@ -32,8 +32,11 @@ interface Props {
 const DRUM_ROWS: { sound: DrumSound; label: string }[] = [
 	{ sound: "bd", label: "Bass" },
 	{ sound: "sn", label: "Snare" },
+	{ sound: "rs", label: "Rimshot" },
 	{ sound: "hh", label: "Hi-Hat" },
 	{ sound: "oh", label: "Open HH" },
+	{ sound: "rd", label: "Ride" },
+	{ sound: "tm", label: "Tom" },
 ];
 
 const TIME_SIGS: TimeSignature[] = [
@@ -70,13 +73,16 @@ function emptyTrack(ts: TimeSignature): DrumStep[] {
 	return Array(stepCount(ts)).fill(null);
 }
 
-/** Build empty tracks for all four drum sounds. */
+/** Build empty tracks for all drum sounds. */
 function emptyTracks(ts: TimeSignature): Record<DrumSound, DrumStep[]> {
 	return {
 		bd: emptyTrack(ts),
 		sn: emptyTrack(ts),
 		hh: emptyTrack(ts),
 		oh: emptyTrack(ts),
+		rs: emptyTrack(ts),
+		rd: emptyTrack(ts),
+		tm: emptyTrack(ts),
 	};
 }
 
@@ -130,6 +136,9 @@ export function DrumPatternEditor({
 				sn: flattenTrack((pattern.tracks.sn ?? emptyTrack(ts)) as (DrumStep | DrumStep[])[], ts),
 				hh: flattenTrack((pattern.tracks.hh ?? emptyTrack(ts)) as (DrumStep | DrumStep[])[], ts),
 				oh: flattenTrack((pattern.tracks.oh ?? emptyTrack(ts)) as (DrumStep | DrumStep[])[], ts),
+				rs: flattenTrack((pattern.tracks.rs ?? emptyTrack(ts)) as (DrumStep | DrumStep[])[], ts),
+				rd: flattenTrack((pattern.tracks.rd ?? emptyTrack(ts)) as (DrumStep | DrumStep[])[], ts),
+				tm: flattenTrack((pattern.tracks.tm ?? emptyTrack(ts)) as (DrumStep | DrumStep[])[], ts),
 			});
 		} else {
 			setName("");
@@ -171,6 +180,9 @@ export function DrumPatternEditor({
 				sn: tracks.sn,
 				hh: tracks.hh,
 				oh: tracks.oh,
+				rs: tracks.rs,
+				rd: tracks.rd,
+				tm: tracks.tm,
 			},
 		};
 	}
@@ -226,6 +238,9 @@ export function DrumPatternEditor({
 				sn: tracks.sn,
 				hh: tracks.hh,
 				oh: tracks.oh,
+				rs: tracks.rs,
+				rd: tracks.rd,
+				tm: tracks.tm,
 			},
 		};
 		stopPreview();

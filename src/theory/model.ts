@@ -137,7 +137,7 @@ export interface Song {
 
 // ─── Drum pattern library entry ───────────────────────────────────────────────
 
-export type DrumSound = "bd" | "sn" | "hh" | "oh";
+export type DrumSound = "bd" | "sn" | "hh" | "oh" | "rs" | "rd" | "tm";
 export type DrumStep = DrumSound | null;
 export type DrumTrack = (DrumStep | DrumStep[])[];
 
