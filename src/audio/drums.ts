@@ -15,6 +15,17 @@ import type {
 
 export const BUILTIN_PATTERNS: DrumPattern[] = [
 	{
+		id: "four-on-the-floor",
+		name: "Four on the Floor",
+		timeSignature: { numerator: 4, denominator: 4 },
+		subdivision: "4n",
+		tracks: {
+			bd: ["bd", "bd", "bd", "bd"],
+			sn: [null, "sn", null, "sn"],
+			hh: ["hh", "hh", "hh", "hh"],
+		},
+	},
+	{
 		id: "rock",
 		name: "Rock",
 		timeSignature: { numerator: 4, denominator: 4 },
