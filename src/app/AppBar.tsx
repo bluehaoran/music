@@ -1,7 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useRef } from "react";
 import { db } from "../data/db";
-import { updateSong } from "../data/songRepo";
+import { deleteSong, updateSong } from "../data/songRepo";
 import { Button } from "@/components/ui/button";
 import { type HomeTab, useNavStore } from "./nav";
 
@@ -55,12 +55,26 @@ export function AppBar({ onImportClick }: Props) {
 		);
 	}
 
+	async function handleBack() {
+		const songId = (screen as Extract<typeof screen, { id: "editor" }>).songId;
+		const song = await db.songs.get(songId);
+		if (song) {
+			const hasContent = song.sections.some((sec) =>
+				sec.parts.some((p) => p.bars.some((b) => b.slots.length > 0)),
+			);
+			if (!hasContent) {
+				await deleteSong(songId);
+			}
+		}
+		goToLibrary();
+	}
+
 	return (
 		<header className="h-14 flex-shrink-0 flex items-center gap-2 px-2 bg-background border-b border-border sticky top-0 z-10">
 			<Button
 				variant="ghost"
 				size="icon"
-				onClick={goToLibrary}
+				onClick={handleBack}
 				aria-label="Back"
 			>
 				<span className="text-2xl leading-none">‹</span>
